@@ -6,14 +6,51 @@
     <title>Получи 10</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+
+    <!-- Конфигурация Firebase -->
+    <script>
+        // Конфигурация Firebase
+        // Замените эту конфигурацию на вашу, полученную из консоли Firebase
+        const firebaseConfig = {
+  apiKey: "AIzaSyAC_Ke5_9UOu0zr6y_Em2geZBenNZq8ZSU",
+  authDomain: "of10-ce5c6.firebaseapp.com",
+  projectId: "of10-ce5c6",
+  storageBucket: "of10-ce5c6.firebasestorage.app",
+  messagingSenderId: "197070027925",
+  appId: "1:197070027925:web:c1ef164f37b204abc22f9c"
+};
+
+        // Инициализация Firebase
+        firebase.initializeApp(firebaseConfig);
+
+        // Получение сервисов Firebase
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+    </script>
 </head>
 <body>
     <div class="container">
+        <div class="auth-container">
+            <div id="user-info" style="display: none;">
+                <img id="user-photo" src="" alt="Фото профиля" class="user-photo">
+                <span id="user-name">Гость</span>
+                <button id="logout-button" class="auth-button">Выйти</button>
+            </div>
+            <button id="login-button" class="auth-button">
+                <i class="fab fa-google"></i> Войти через Google
+            </button>
+        </div>
+
         <h1>Получи 10</h1>
         <p class="description">Используйте четыре цифры и математические операции (+, -, *, /), чтобы получить ровно 10.</p>
         
         <div class="game-area">
-            <div class="settings-icon" id="settings"><i class="fas fa-cog"></i></div>
+            <button class="settings-icon" id="settings"><i class="fas fa-cog"></i></button>
             <div class="timer" id="timer"><i class="fas fa-clock"></i> <span id="time">00:00</span></div>
             <div class="numbers-container">
                 <div class="number" id="number1"></div>
@@ -33,19 +70,21 @@
             <div class="solution-input">
                 <input type="text" id="solution" placeholder="Составьте выражение, используя кнопки выше" readonly>
                 <p class="hint">Используйте только цифры, показанные выше, и операторы +, -, *, /</p>
+                <p class="keyboard-hint">Вы также можете использовать клавиатуру: цифры 1-9 (включая NumPad), операторы +, -, *, / (включая NumPad), C/Delete/Backspace для очистки, N или Numpad0 для пропуска/следующего уровня</p>
             </div>
             
             <div class="controls">
-                <button id="new-game">Новая игра</button>
+                <button id="new-game" class="skip-level">Пропустить уровень</button>
             </div>
             
             <div class="result" id="result"></div>
+            <div class="database-status" id="database-status">Загрузка баз данных...</div>
         </div>
     </div>
     
     <!-- Экран настроек -->
     <div class="settings-screen" id="settings-screen" style="display: none;">
-        <button id="back-to-game"><i class="fas fa-arrow-left"></i> Назад</button>
+        <button id="back-to-game"><i class="fas fa-arrow-left"></i></button>
         <h2>Настройки</h2>
         <div style="width: 100%; text-align: center; margin: 20px 0;">
             <label for="difficulty">Выбор сложности:</label>
@@ -156,6 +195,8 @@
             gap: 15px;
             margin-bottom: 30px;
             flex-wrap: wrap;
+            position: relative; /* Добавляем позиционирование для абсолютного позиционирования кнопки сброса */
+            padding: 0 60px; /* Добавляем отступы по бокам для места под кнопку сброса */
         }
 
         .operator {
@@ -182,6 +223,9 @@
 
         .operator[data-op="clear"] {
             background-color: #e74c3c;
+            position: absolute;
+            right: 0;
+            top: 0;
         }
 
         .operator[data-op="clear"]:hover {
@@ -197,18 +241,56 @@
 
         button {
             padding: 12px 24px;
-            background-color: #2ecc71;
+            background-color: #3498db;
             color: white;
             border: none;
             border-radius: 5px;
             cursor: pointer;
             font-size: 16px;
             font-weight: bold;
-            transition: background-color 0.3s;
+            transition: all 0.3s;
         }
 
         button:hover {
+            background-color: #2980b9;
+        }
+
+        /* Стили для кнопки "Пропустить уровень" */
+        .skip-level {
+            background-color: #95a5a6; /* Светло-серый цвет */
+        }
+
+        .skip-level:hover {
+            background-color: #7f8c8d; /* Немного темнее при наведении */
+        }
+
+        /* Стили для кнопки "Следующий уровень" */
+        .next-level {
+            background-color: #2ecc71;
+            animation: pulse 1.5s infinite;
+        }
+
+        .next-level:hover {
             background-color: #27ae60;
+            animation: none;
+        }
+
+        /* Анимация пульсации */
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7);
+            }
+
+            70% {
+                transform: scale(1.05);
+                box-shadow: 0 0 0 10px rgba(46, 204, 113, 0);
+            }
+
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(46, 204, 113, 0);
+            }
         }
 
         .solution-input {
@@ -226,10 +308,16 @@
             letter-spacing: 2px;
         }
 
-        .hint {
+        .hint, .keyboard-hint {
             font-size: 14px;
             color: #7f8c8d;
             text-align: center;
+        }
+
+        .keyboard-hint {
+            font-style: italic;
+            margin-top: 2px;
+            font-size: 12px;
         }
 
         .result {
@@ -257,15 +345,24 @@
             position: absolute;
             top: 10px;
             left: 20px;
-            font-size: 18px;
+            font-size: 24px;
             color: #7f8c8d;
             cursor: pointer;
             display: flex;
             align-items: center;
+            justify-content: center;
+            background: none;
+            border: none;
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            outline: none;
         }
 
-        .settings-icon:hover {
-            color: #34495e;
+        .settings-icon:hover, .settings-icon:focus {
+            color: #7f8c8d;
+            background: none;
+            outline: none;
         }
 
         .settings-screen {
@@ -287,19 +384,24 @@
             position: absolute;
             top: 10px;
             left: 20px;
-            font-size: 18px;
+            font-size: 24px;
             color: #7f8c8d;
             cursor: pointer;
             background: none;
             border: none;
-            font-size: 18px;
             display: flex;
             align-items: center;
-            font-weight: bold;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            outline: none;
         }
 
-        #back-to-game:hover {
-            color: #34495e;
+        #back-to-game:hover, #back-to-game:focus {
+            color: #7f8c8d;
+            background: none;
+            outline: none;
         }
 
         .settings-screen h2 {
@@ -308,7 +410,7 @@
         }
 
         #difficulty {
-            width: 80%;
+            width: 40%;
             margin: 20px 0;
             -webkit-appearance: none;
             appearance: none;
@@ -344,11 +446,207 @@
         #difficulty-label {
             font-size: 18px;
             color: #2c3e50;
+            text-align: center;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .database-status {
+            text-align: center;
+            font-size: 14px;
+            color: #7f8c8d;
+            margin-top: 10px;
+            transition: opacity 0.5s ease;
+        }
+
+        /* Стили для аутентификации */
+        .auth-container {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 5px 10px;
+        }
+
+        .auth-button {
+            background-color: #4285F4;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 16px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .auth-button:hover {
+            background-color: #357AE8;
+        }
+
+        #logout-button {
+            background-color: #95a5a6;
+            margin-left: 10px;
+        }
+
+        #logout-button:hover {
+            background-color: #7f8c8d;
+        }
+
+        #user-info {
+            display: flex;
+            align-items: center;
+        }
+
+        .user-photo {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        #user-name {
+            font-size: 14px;
+            font-weight: bold;
+            color: #2c3e50;
         }
     </style>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // Элементы аутентификации
+            const loginButton = document.getElementById('login-button');
+            const logoutButton = document.getElementById('logout-button');
+            const userInfo = document.getElementById('user-info');
+            const userName = document.getElementById('user-name');
+            const userPhoto = document.getElementById('user-photo');
+
+            // Текущий пользователь
+            let currentUser = null;
+
+            // Функция для входа через Google
+            function loginWithGoogle() {
+                const provider = new firebase.auth.GoogleAuthProvider();
+                auth.signInWithPopup(provider)
+                    .catch(error => {
+                        console.error('Ошибка входа:', error);
+                        alert('Ошибка входа. Пожалуйста, попробуйте снова.');
+                    });
+            }
+
+            // Функция для выхода
+            function logout() {
+                auth.signOut()
+                    .catch(error => {
+                        console.error('Ошибка выхода:', error);
+                    });
+            }
+
+            // Обработчик изменения состояния аутентификации
+            auth.onAuthStateChanged(user => {
+                if (user) {
+                    // Пользователь вошел
+                    currentUser = user;
+
+                    // Обновляем UI
+                    loginButton.style.display = 'none';
+                    userInfo.style.display = 'flex';
+                    userName.textContent = user.displayName || 'Пользователь';
+
+                    if (user.photoURL) {
+                        userPhoto.src = user.photoURL;
+                        userPhoto.style.display = 'block';
+                    } else {
+                        userPhoto.style.display = 'none';
+                    }
+
+                    // Загружаем данные пользователя из Firestore
+                    loadUserData(user.uid);
+                } else {
+                    // Пользователь вышел
+                    currentUser = null;
+
+                    // Обновляем UI
+                    loginButton.style.display = 'block';
+                    userInfo.style.display = 'none';
+                    userName.textContent = 'Гость';
+                    userPhoto.src = '';
+                }
+            });
+
+            // Загрузка данных пользователя из Firestore
+            function loadUserData(userId) {
+                db.collection('users').doc(userId).get()
+                    .then(doc => {
+                        if (doc.exists) {
+                            const userData = doc.data();
+                            console.log('Данные пользователя:', userData);
+                            // Здесь можно использовать данные пользователя
+                        } else {
+                            // Создаем новый документ для пользователя
+                            db.collection('users').doc(userId).set({
+                                displayName: currentUser.displayName,
+                                email: currentUser.email,
+                                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                                stats: {
+                                    gamesPlayed: 0,
+                                    gamesWon: 0,
+                                    bestTime: null
+                                }
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Ошибка загрузки данных пользователя:', error);
+                    });
+            }
+
+            // Сохранение результатов игры
+            function saveGameResult(won, time, difficulty) {
+                if (!currentUser) return;
+
+                const userId = currentUser.uid;
+                const userRef = db.collection('users').doc(userId);
+
+                // Обновляем статистику пользователя
+                userRef.get().then(doc => {
+                    if (doc.exists) {
+                        const userData = doc.data();
+                        const stats = userData.stats || {
+                            gamesPlayed: 0,
+                            gamesWon: 0,
+                            bestTime: null
+                        };
+
+                        stats.gamesPlayed++;
+                        if (won) {
+                            stats.gamesWon++;
+
+                            // Обновляем лучшее время, если текущее лучше или это первая победа
+                            if (stats.bestTime === null || time < stats.bestTime) {
+                                stats.bestTime = time;
+                            }
+                        }
+
+                        // Обновляем документ пользователя
+                        userRef.update({ stats });
+
+                        // Добавляем запись об игре
+                        db.collection('users').doc(userId).collection('games').add({
+                            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                            won,
+                            time,
+                            difficulty
+                        });
+                    }
+                });
+            }
+
+            // Обработчики событий для кнопок аутентификации
+            loginButton.addEventListener('click', loginWithGoogle);
+            logoutButton.addEventListener('click', logout);
+
+            // Экспортируем функцию сохранения результатов для использования в игре
+            window.saveGameResult = saveGameResult;
             // Элементы DOM
             const numberElements = [
                 document.getElementById('number1'),
@@ -360,159 +658,101 @@
             const newGameButton = document.getElementById('new-game');
             const solutionInput = document.getElementById('solution');
             const resultElement = document.getElementById('result');
-            
+
             // Текущие числа в игре
             let currentNumbers = [];
             // Отслеживание использованных цифр
             let usedNumberIndices = [];
-            
+
             // Флаг для отслеживания последнего добавленного символа
             let lastAddedWasNumber = false;
-            
+
             // Переменная для хранения времени начала игры
             let startTime;
-            
+
             // Элемент таймера
             const timerElement = document.getElementById('timer');
             let timerInterval;
+
+            // Встроенные базы данных комбинаций для разных уровней сложности
+
+            // Легкий уровень - комбинации с числами от 1 до 9
+            const easyLevelCombinations = [
+                {"numbers": [1, 3, 3, 3], "expression": "1 + 3 + 3 + 3 = 10"},
+                {"numbers": [1, 2, 3, 4], "expression": "1 + 2 + 3 + 4 = 10"},
+                {"numbers": [2, 2, 2, 4], "expression": "2 + 2 + 2 + 4 = 10"},
+                {"numbers": [2, 2, 3, 3], "expression": "2 + 2 + 3 + 3 = 10"},
+                {"numbers": [1, 1, 4, 4], "expression": "1 + 1 + 4 + 4 = 10"},
+                {"numbers": [5, 5, 5, 5], "expression": "5 + 5 - 5 + 5 = 10"},
+                {"numbers": [2, 4, 6, 8], "expression": "2 * 4 + 6 - 8 = 10"},
+                {"numbers": [3, 3, 3, 9], "expression": "3 * 3 + 3 - 9 = 10"},
+                {"numbers": [2, 3, 5, 5], "expression": "2 * 5 + 3 - 5 = 10"},
+                {"numbers": [1, 2, 5, 9], "expression": "9 + 2 - 5 * 1 = 10"},
+                {"numbers": [1, 3, 4, 7], "expression": "7 + 4 - 1 * 3 = 10"},
+                {"numbers": [2, 2, 3, 8], "expression": "8 + 3 - 2 / 2 = 10"},
+                {"numbers": [1, 2, 5, 6], "expression": "6 + 5 - 1 * 2 = 10"},
+                {"numbers": [1, 2, 3, 6], "expression": "6 + 3 + 2 - 1 = 10"},
+                {"numbers": [1, 2, 3, 8], "expression": "8 + 3 - 2 * 1 = 10"}
+            ];
+
+            // Средний уровень - комбинации с числами от 2 до 9, без повторений, с умножением/делением
+            const mediumLevelCombinations = [
+                {"numbers": [2, 3, 5, 7], "expression": "2 * 5 + 3 - 7 = 10"},
+                {"numbers": [2, 3, 6, 8], "expression": "8 + 6 - 2 * 3 = 10"},
+                {"numbers": [2, 4, 5, 9], "expression": "9 - 4 + 5 * 2 = 10"},
+                {"numbers": [2, 4, 6, 8], "expression": "2 * 4 + 6 - 8 = 10"},
+                {"numbers": [2, 4, 7, 9], "expression": "9 - 7 + 4 * 2 = 10"},
+                {"numbers": [2, 5, 6, 8], "expression": "8 - 6 + 2 * 5 = 10"},
+                {"numbers": [2, 5, 7, 9], "expression": "9 - 7 + 2 * 5 = 10"},
+                {"numbers": [2, 6, 7, 8], "expression": "8 - 6 + 2 * 7 = 10"},
+                {"numbers": [3, 4, 5, 7], "expression": "7 * 3 - 5 * 4 = 10"},
+                {"numbers": [3, 4, 6, 9], "expression": "9 - 6 + 3 * 4 = 10"},
+                {"numbers": [3, 5, 6, 8], "expression": "8 - 3 + 5 * 6 = 10"},
+                {"numbers": [3, 5, 7, 8], "expression": "8 - 5 + 3 * 7 = 10"},
+                {"numbers": [3, 6, 7, 9], "expression": "9 - 6 + 7 * 3 = 10"},
+                {"numbers": [4, 5, 6, 9], "expression": "9 - 5 + 6 * 4 = 10"},
+                {"numbers": [4, 6, 7, 9], "expression": "9 - 7 + 4 * 6 = 10"}
+            ];
+
+            // Трудный уровень - комбинации с числами от 2 до 9, без повторений, без знака +
+            const hardLevelCombinations = [
+                {"numbers": [2, 3, 5, 8], "expression": "8 * 2 - 5 - 3 = 10"},
+                {"numbers": [2, 3, 6, 9], "expression": "9 * 2 - 6 - 3 = 10"},
+                {"numbers": [2, 4, 5, 7], "expression": "7 * 2 - 5 - 4 = 10"},
+                {"numbers": [2, 4, 6, 8], "expression": "8 * 2 - 6 - 4 = 10"},
+                {"numbers": [2, 5, 6, 7], "expression": "7 * 2 - 5 - 6 = 10"},
+                {"numbers": [2, 5, 7, 9], "expression": "9 * 2 - 5 - 7 = 10"},
+                {"numbers": [2, 6, 7, 8], "expression": "8 * 2 - 6 - 7 = 10"},
+                {"numbers": [3, 4, 5, 8], "expression": "8 * 3 - 5 - 4 = 10"},
+                {"numbers": [3, 4, 7, 9], "expression": "9 * 3 - 7 - 4 = 10"},
+                {"numbers": [3, 5, 6, 8], "expression": "8 * 3 - 5 - 6 = 10"},
+                {"numbers": [3, 5, 7, 9], "expression": "9 * 3 - 5 - 7 = 10"},
+                {"numbers": [3, 6, 7, 8], "expression": "8 * 3 - 6 - 7 = 10"},
+                {"numbers": [4, 5, 6, 9], "expression": "9 * 4 - 5 - 6 = 10"},
+                {"numbers": [4, 5, 7, 8], "expression": "8 * 4 - 5 - 7 = 10"},
+                {"numbers": [4, 6, 7, 9], "expression": "9 * 4 - 6 - 7 = 10"}
+            ];
+
+            // Флаг загрузки баз данных
+            let databasesLoaded = true;
+
+            // Обновляем статус загрузки баз данных
+            const databaseStatus = document.getElementById('database-status');
+            databaseStatus.textContent = 'Базы данных успешно загружены';
+            databaseStatus.style.color = '#2ecc71';
+
+            // Скрываем сообщение через 3 секунды
+            setTimeout(() => {
+                databaseStatus.style.opacity = '0';
+            }, 3000);
             
-            // Генерация случайного числа в зависимости от сложности
-            function getRandomNumber(difficulty, existingNumbers = []) {
-                if (difficulty === 2 || difficulty === 3) { // Средний и трудный уровень - без единиц
-                    // Для трудного уровня проверяем, чтобы не было повторяющихся цифр
-                    if (difficulty === 3 && existingNumbers.length > 0) {
-                        let num;
-                        do {
-                            num = Math.floor(Math.random() * 8) + 2; // от 2 до 9
-                        } while (existingNumbers.includes(num));
-                        return num;
-                    } else {
-                        return Math.floor(Math.random() * 8) + 2; // от 2 до 9
-                    }
-                } else {
-                    return Math.floor(Math.random() * 9) + 1; // от 1 до 9
-                }
-            }
-            
-            // Проверка, можно ли получить 10 из текущих чисел и вывод решения в консоль
-            function canMakeTen(numbers, difficulty) {
-                const [a, b, c, d] = numbers;
-
-                // Для трудного уровня сложности
-                if (difficulty === 3) {
-                    // Проверяем, что все цифры разные
-                    const uniqueNumbers = [...new Set(numbers)];
-                    if (uniqueNumbers.length !== 4) {
-                        console.log('Для трудного уровня все цифры должны быть разными');
-                        return false;
-                    }
-
-                    // Проверяем, можно ли получить 10 без использования знака +
-                    const hardExpressions = [
-                        `${a} * ${b} - ${c} - ${d}`,
-                        `${a} * ${b} - ${c} / ${d}`,
-                        `${a} * ${b} / ${c} - ${d}`,
-                        `${a} / ${b} * ${c} - ${d}`,
-                        `${a} - ${b} * ${c} / ${d}`,
-                        `${a} - ${b} / ${c} * ${d}`,
-                        `${a} / ${b} - ${c} * ${d}`
-                    ];
-
-                    for (const expr of hardExpressions) {
-                        try {
-                            // eslint-disable-next-line no-eval
-                            if (eval(expr) === 10) {
-                                console.log(`Возможное решение для трудного уровня: ${expr} = 10`);
-                                return true;
-                            }
-                        } catch (error) {
-                            continue;
-                        }
-                    }
-
-                    return false;
-                }
-                // Для среднего уровня сложности проверяем, что нельзя получить 10 только сложением и вычитанием
-                else if (difficulty === 2) {
-                    // Проверяем, можно ли получить 10 только с помощью + и -
-                    const addSubExpressions = [
-                        `${a} + ${b} + ${c} + ${d}`,
-                        `${a} + ${b} + ${c} - ${d}`,
-                        `${a} + ${b} - ${c} + ${d}`,
-                        `${a} + ${b} - ${c} - ${d}`,
-                        `${a} - ${b} + ${c} + ${d}`,
-                        `${a} - ${b} + ${c} - ${d}`,
-                        `${a} - ${b} - ${c} + ${d}`,
-                        `${a} - ${b} - ${c} - ${d}`
-                    ];
-
-                    for (const expr of addSubExpressions) {
-                        try {
-                            // eslint-disable-next-line no-eval
-                            if (eval(expr) === 10) {
-                                console.log(`Можно получить 10 только сложением/вычитанием: ${expr} = 10`);
-                                return false; // Не подходит для среднего уровня
-                            }
-                        } catch (error) {
-                            continue;
-                        }
-                    }
-
-                    // Проверяем, можно ли получить 10 с использованием * или /
-                    const mulDivExpressions = [
-                        `${a} * ${b} + ${c} + ${d}`,
-                        `${a} * ${b} + ${c} - ${d}`,
-                        `${a} * ${b} - ${c} + ${d}`,
-                        `${a} * ${b} - ${c} - ${d}`,
-                        `${a} / ${b} + ${c} + ${d}`,
-                        `${a} / ${b} + ${c} - ${d}`,
-                        `${a} / ${b} - ${c} + ${d}`,
-                        `${a} / ${b} - ${c} - ${d}`,
-                        `${a} + ${b} * ${c} + ${d}`,
-                        `${a} + ${b} * ${c} - ${d}`,
-                        `${a} - ${b} * ${c} + ${d}`,
-                        `${a} - ${b} * ${c} - ${d}`,
-                        `${a} + ${b} / ${c} + ${d}`,
-                        `${a} + ${b} / ${c} - ${d}`,
-                        `${a} - ${b} / ${c} + ${d}`,
-                        `${a} - ${b} / ${c} - ${d}`
-                    ];
-
-                    for (const expr of mulDivExpressions) {
-                        try {
-                            // eslint-disable-next-line no-eval
-                            if (eval(expr) === 10) {
-                                console.log(`Возможное решение для среднего уровня: ${expr} = 10`);
-                                return true;
-                            }
-                        } catch (error) {
-                            continue;
-                        }
-                    }
-
-                    return false;
-                } else {
-                    // Для легкого уровня - стандартная проверка
-                    const expressions = [
-                        `${a} + ${b} + ${c} + ${d}`,
-                        `${a} * ${b} + ${c} - ${d}`,
-                        `${a} * ${b} - ${c} + ${d}`,
-                        `${a} + ${b} * ${c} - ${d}`,
-                        `${a} - ${b} * ${c} + ${d}`
-                    ];
-
-                    for (const expr of expressions) {
-                        console.log(`Проверка выражения: ${expr}`);
-                        try {
-                            // eslint-disable-next-line no-eval
-                            if (eval(expr) === 10) {
-                                console.log(`Возможное решение: ${expr} = 10`);
-                                return true;
-                            }
-                        } catch (error) {
-                            continue;
-                        }
-                    }
+            // Функция для проверки решения
+            function checkExpression(expression) {
+                try {
+                    // eslint-disable-next-line no-eval
+                    const result = eval(expression);
+                    return Math.abs(result - 10) < 0.0001;
+                } catch (error) {
                     return false;
                 }
             }
@@ -534,29 +774,51 @@
                 }
             }
             
+            // Получение случайной комбинации из базы данных
+            function getRandomCombination(difficulty) {
+                let combinations;
+
+                switch (difficulty) {
+                    case 1:
+                        combinations = easyLevelCombinations;
+                        break;
+                    case 2:
+                        combinations = mediumLevelCombinations;
+                        break;
+                    case 3:
+                        combinations = hardLevelCombinations;
+                        break;
+                    default:
+                        combinations = easyLevelCombinations;
+                }
+
+                // Выбираем случайную комбинацию из базы данных
+                const randomIndex = Math.floor(Math.random() * combinations.length);
+                return combinations[randomIndex].numbers;
+            }
+
+            // Функция для получения случайного числа из диапазона
+            function getRandomInt(min, max) {
+                return Math.floor(Math.random() * (max - min + 1)) + min;
+            }
+
             // Инициализация новой игры
             function startNewGame() {
                 // Получаем текущий уровень сложности
                 const difficultySlider = document.getElementById('difficulty');
                 const difficulty = parseInt(difficultySlider.value);
 
-                do {
-                    currentNumbers = [];
-                    usedNumberIndices = [];
-                    lastAddedWasNumber = false;
+                // Сбрасываем состояние игры
+                usedNumberIndices = [];
+                lastAddedWasNumber = false;
 
-                    // Сбрасываем классы для всех цифр
-                    numberElements.forEach(el => {
-                        el.classList.remove('used');
-                    });
+                // Сбрасываем классы для всех цифр
+                numberElements.forEach(el => {
+                    el.classList.remove('used');
+                });
 
-                    // Генерируем новые числа в зависимости от сложности
-                    for (let i = 0; i < 4; i++) {
-                        const num = getRandomNumber(difficulty, currentNumbers);
-                        currentNumbers.push(num);
-                        numberElements[i].textContent = num;
-                    }
-                } while (!canMakeTen(currentNumbers, difficulty));
+                // Получаем случайную комбинацию из базы данных
+                currentNumbers = getRandomCombination(difficulty);
 
                 // Перемешивание чисел
                 shuffle(currentNumbers);
@@ -576,28 +838,15 @@
                 clearInterval(timerInterval);
                 timerInterval = setInterval(updateTimer, 1000);
 
-                // Выводим информацию о текущем уровне сложности
-                console.log(`Игра запущена с уровнем сложности: ${difficulty}`);
+                // Восстанавливаем кликабельность всех кнопок операторов
+                const operatorButtons = document.querySelectorAll('.operator');
+                operatorButtons.forEach(button => {
+                    // Восстанавливаем pointer-events
+                    button.style.pointerEvents = 'auto';
+                });
 
-                // Восстанавливаем активность кнопки сброса
-                const clearButton = document.querySelector('.operator[data-op="clear"]');
-                clearButton.disabled = false;
-                clearButton.style.opacity = '1';
-                clearButton.style.cursor = 'pointer';
-
-                // Управление кнопкой "+" в зависимости от уровня сложности
-                const plusButton = document.querySelector('.operator[data-op="+"]');
-                if (difficulty === 3) {
-                    // Для трудного уровня делаем кнопку "+" неактивной
-                    plusButton.disabled = true;
-                    plusButton.style.opacity = '0.5';
-                    plusButton.style.cursor = 'not-allowed';
-                } else {
-                    // Для других уровней делаем кнопку "+" активной
-                    plusButton.disabled = false;
-                    plusButton.style.opacity = '1';
-                    plusButton.style.cursor = 'pointer';
-                }
+                // Сбрасываем состояние кнопки новой игры
+                updateNewGameButton(false);
             }
             
             // Добавление символа к решению
@@ -635,19 +884,11 @@
                 });
             }
             
-            // Генерация всех возможных перестановок
-            function permute(arr) {
-                if (arr.length <= 1) return [arr];
-                let result = [];
-                for (let i = 0; i < arr.length; i++) {
-                    const current = arr[i];
-                    const remaining = arr.slice(0, i).concat(arr.slice(i + 1));
-                    const remainingPermuted = permute(remaining);
-                    for (let perm of remainingPermuted) {
-                        result.push([current].concat(perm));
-                    }
-                }
-                return result;
+            // Функция для форматирования времени
+            function formatTime(seconds) {
+                const minutes = Math.floor(seconds / 60);
+                const remainingSeconds = seconds % 60;
+                return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
             }
 
             // Проверка решения
@@ -685,67 +926,84 @@
                     }
                 }
 
-                // Генерация всех возможных перестановок чисел и операторов
-                const numberPermutations = permute(usedDigits);
-                const operatorPermutations = permute(operators);
+                // Проверяем, равно ли выражение 10
+                const isCorrect = checkExpression(solution);
 
-                // Проверка всех комбинаций
-                let isCorrect = false;
-                for (let nums of numberPermutations) {
-                    for (let ops of operatorPermutations) {
-                        const expr = `${nums[0]} ${ops[0]} ${nums[1]} ${ops[1]} ${nums[2]} ${ops[2]} ${nums[3]}`;
-                        try {
-                            // eslint-disable-next-line no-eval
-                            if (eval(expr) === 10) {
-                                isCorrect = true;
-                                break;
-                            }
-                        } catch (error) {
-                            continue;
+                try {
+                    // Вычисляем результат выражения для отображения в сообщении
+                    const expressionResult = eval(solution);
+                    const roundedResult = Math.round(expressionResult * 100) / 100; // Округляем до 2 знаков после запятой
+
+                    if (isCorrect) {
+                        clearInterval(timerInterval);
+                        const endTime = new Date();
+                        const timeTaken = ((endTime - startTime) / 1000);
+                        const minutes = Math.floor(timeTaken / 60);
+                        const seconds = Math.floor(timeTaken % 60);
+                        let timeMessage = '';
+                        function getWordForm(number, one, two, five) {
+                            number = Math.abs(number) % 100;
+                            const n1 = number % 10;
+                            if (number > 10 && number < 20) return five;
+                            if (n1 > 1 && n1 < 5) return two;
+                            if (n1 === 1) return one;
+                            return five;
                         }
-                    }
-                    if (isCorrect) break;
-                }
 
-                if (isCorrect) {
-                    clearInterval(timerInterval);
-                    const endTime = new Date();
-                    const timeTaken = ((endTime - startTime) / 1000);
-                    const minutes = Math.floor(timeTaken / 60);
-                    const seconds = Math.floor(timeTaken % 60);
-                    let timeMessage = '';
-                    function getWordForm(number, one, two, five) {
-                        number = Math.abs(number) % 100;
-                        const n1 = number % 10;
-                        if (number > 10 && number < 20) return five;
-                        if (n1 > 1 && n1 < 5) return two;
-                        if (n1 === 1) return one;
-                        return five;
-                    }
+                        const minuteWord = getWordForm(minutes, 'минуту', 'минуты', 'минут');
+                        const secondWord = getWordForm(seconds, 'секунду', 'секунды', 'секунд');
+                        if (minutes > 0) {
+                            timeMessage = `${minutes} ${minuteWord} и ${seconds} ${secondWord}`;
+                        } else {
+                            timeMessage = `${seconds} ${secondWord}`;
+                        }
+                        showResult(`Правильно! Вы получили 10! Вы справились за ${timeMessage}.`, true);
 
-                    const minuteWord = getWordForm(minutes, 'минуту', 'минуты', 'минут');
-                    const secondWord = getWordForm(seconds, 'секунду', 'секунды', 'секунд');
-                    if (minutes > 0) {
-                        timeMessage = `${minutes} ${minuteWord} и ${seconds} ${secondWord}`;
+                        // Сохраняем результат игры, если пользователь авторизован
+                        if (typeof window.saveGameResult === 'function') {
+                            const difficultySlider = document.getElementById('difficulty');
+                            const difficulty = parseInt(difficultySlider.value);
+                            window.saveGameResult(true, timeTaken, difficulty);
+                        }
+
+                        // Делаем все кнопки операторов некликабельными после победы, но сохраняем их внешний вид
+                        const operatorButtons = document.querySelectorAll('.operator');
+                        operatorButtons.forEach(button => {
+                            // Используем pointer-events: none вместо disabled
+                            button.style.pointerEvents = 'none';
+                            // Не меняем opacity, чтобы сохранить внешний вид
+                        });
                     } else {
-                        timeMessage = `${seconds} ${secondWord}`;
+                        showResult(`Неправильно. Результат: ${roundedResult}. Нужно получить 10.`, false);
                     }
-                    showResult(`Правильно! Вы получили 10! Вы справились за ${timeMessage}.`, true);
-
-                    // Делаем кнопку сброса неактивной после победы
-                    const clearButton = document.querySelector('.operator[data-op="clear"]');
-                    clearButton.disabled = true;
-                    clearButton.style.opacity = '0.5';
-                    clearButton.style.cursor = 'not-allowed';
-                } else {
-                    showResult('Неправильно. Попробуйте снова.', false);
+                } catch (error) {
+                    // В случае ошибки вычисления
+                    showResult('Ошибка в выражении. Проверьте правильность ввода.', false);
                 }
             }
             
+            // Обновление состояния кнопки новой игры
+            function updateNewGameButton(gameCompleted = false) {
+                const newGameButton = document.getElementById('new-game');
+
+                if (gameCompleted) {
+                    // Если уровень пройден, меняем на "Следующий уровень" и зеленый цвет
+                    newGameButton.textContent = 'Следующий уровень';
+                    newGameButton.className = 'next-level';
+                } else {
+                    // Если уровень не пройден, меняем на "Пропустить уровень" и красный цвет
+                    newGameButton.textContent = 'Пропустить уровень';
+                    newGameButton.className = 'skip-level';
+                }
+            }
+
             // Отображение результата
             function showResult(message, isCorrect) {
                 resultElement.textContent = message;
                 resultElement.className = isCorrect ? 'result correct' : 'result incorrect';
+
+                // Обновляем состояние кнопки новой игры
+                updateNewGameButton(isCorrect);
             }
             
             // Добавление обработчика клика для каждой цифры
@@ -807,23 +1065,123 @@
             difficultySlider.addEventListener('input', () => {
                 const difficulty = difficultySlider.value;
                 let difficultyText = '';
+                let difficultyColor = '';
+
                 switch (difficulty) {
                     case '1':
-                        difficultyText = 'Легкий';
+                        difficultyText = 'Все уровни подряд';
+                        difficultyColor = '#2ecc71'; // Зеленый
                         break;
                     case '2':
-                        difficultyText = 'Средний';
+                        difficultyText = 'Уровни средней сложности';
+                        difficultyColor = '#f39c12'; // Желтый
                         break;
                     case '3':
-                        difficultyText = 'Трудный';
+                        difficultyText = 'Трудные уровни';
+                        difficultyColor = '#c0392b'; // Темно-красный
                         break;
                 }
+
                 difficultyLabel.textContent = difficultyText;
+                difficultyLabel.style.color = difficultyColor;
+                difficultyLabel.style.fontWeight = 'bold';
             });
 
             // Обработчик изменения сложности
             difficultySlider.addEventListener('change', () => {
                 // Трудный уровень теперь доступен, поэтому не нужно возвращать слайдер
+            });
+
+            // Установка начального цвета для уровня сложности
+            const initialDifficulty = difficultySlider.value;
+            let initialColor = '';
+
+            let initialText = '';
+            switch (initialDifficulty) {
+                case '1':
+                    initialText = 'Все уровни подряд';
+                    initialColor = '#2ecc71'; // Зеленый
+                    break;
+                case '2':
+                    initialText = 'Уровни средней сложности';
+                    initialColor = '#f39c12'; // Желтый
+                    break;
+                case '3':
+                    initialText = 'Трудные уровни';
+                    initialColor = '#c0392b'; // Темно-красный
+                    break;
+            }
+            difficultyLabel.textContent = initialText;
+
+            difficultyLabel.style.color = initialColor;
+            difficultyLabel.style.fontWeight = 'bold';
+
+            // Обработчик нажатия клавиш на клавиатуре
+            document.addEventListener('keydown', (event) => {
+                // Игнорируем нажатия клавиш, если игра не активна (открыто меню настроек)
+                if (settingsScreen.style.display !== 'none') {
+                    return;
+                }
+
+                const key = event.key;
+
+                // Обработка цифр от 1 до 9 (включая NumPad)
+                const digit = key.replace('Numpad', ''); // Преобразуем NumpadX в X
+                if (/^[1-9]$/.test(digit)) {
+                    // Находим соответствующую цифру среди доступных
+                    for (let i = 0; i < numberElements.length; i++) {
+                        if (numberElements[i].textContent === digit && !usedNumberIndices.includes(i)) {
+                            // Симулируем клик по цифре
+                            numberElements[i].click();
+                            return;
+                        }
+                    }
+                }
+
+                // Обработка операторов (включая NumPad)
+                switch (key) {
+                    case '+':
+                    case 'NumpadAdd':
+                        document.querySelector('.operator[data-op="+"]').click();
+                        break;
+                    case '-':
+                    case 'NumpadSubtract':
+                        document.querySelector('.operator[data-op="-"]').click();
+                        break;
+                    case '*':
+                    case 'x':
+                    case 'X':
+                    case '×':
+                    case 'NumpadMultiply':
+                        document.querySelector('.operator[data-op="*"]').click();
+                        break;
+                    case '/':
+                    case ':':
+                    case '÷':
+                    case 'NumpadDivide':
+                        document.querySelector('.operator[data-op="/"]').click();
+                        break;
+                    case 'c':
+                    case 'C':
+                    case 'Backspace':
+                    case 'Delete':
+                    case 'NumpadDecimal': // Точка на NumPad часто используется как Clear
+                        document.querySelector('.operator[data-op="clear"]').click();
+                        break;
+                    // Убрана обработка Enter, так как проверка происходит автоматически
+                    case 'n':
+                    case 'N':
+                    case '0': // Обычный 0
+                    case 'Numpad0': // 0 на NumPad
+                        // Пропуск уровня / Следующий уровень
+                        newGameButton.click();
+                        break;
+                }
+
+                // Дополнительная проверка для Numpad0 по коду клавиши
+                if (event.code === 'Numpad0') {
+                    newGameButton.click();
+                }
             });
 
             // Запуск игры при загрузке страницы
