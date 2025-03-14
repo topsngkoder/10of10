@@ -97,7 +97,7 @@
             <h3>Статистика пройденных уровней</h3>
             <div class="stats-container">
                 <div class="stat-item">
-                    <div class="stat-label">Легкий уровень:</div>
+                    <div class="stat-label">Все уровни:</div>
                     <div id="easy-completed">0</div>
                     <div id="easy-total">из 0</div>
                     <div class="progress-bar">
@@ -105,7 +105,7 @@
                     </div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-label">Средний уровень:</div>
+                    <div class="stat-label">Уровни средней сложности:</div>
                     <div id="medium-completed">0</div>
                     <div id="medium-total">из 0</div>
                     <div class="progress-bar">
@@ -113,7 +113,7 @@
                     </div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-label">Сложный уровень:</div>
+                    <div class="stat-label">Сложные уровни:</div>
                     <div id="hard-completed">0</div>
                     <div id="hard-total">из 0</div>
                     <div class="progress-bar">
@@ -638,9 +638,9 @@
 
                 // Обновляем статистику для каждого уровня сложности
                 const levels = [
-                    { key: 'easy', label: 'Легкий', combinations: easyLevelCombinations },
-                    { key: 'medium', label: 'Средний', combinations: mediumLevelCombinations },
-                    { key: 'hard', label: 'Сложный', combinations: hardLevelCombinations }
+                    { key: 'easy', label: 'Все уровни', combinations: easyLevelCombinations },
+                    { key: 'medium', label: 'Уровни средней сложности', combinations: mediumLevelCombinations },
+                    { key: 'hard', label: 'Сложные уровни', combinations: hardLevelCombinations }
                 ];
 
                 levels.forEach(level => {
@@ -1416,7 +1416,7 @@
 
                 switch (difficulty) {
                     case '1':
-                        difficultyText = 'Все уровни подряд';
+                        difficultyText = 'Все уровни';
                         difficultyColor = '#2ecc71'; // Зеленый
                         break;
                     case '2':
@@ -1424,7 +1424,7 @@
                         difficultyColor = '#f39c12'; // Желтый
                         break;
                     case '3':
-                        difficultyText = 'Трудные уровни';
+                        difficultyText = 'Сложные уровни';
                         difficultyColor = '#c0392b'; // Темно-красный
                         break;
                 }
@@ -1446,7 +1446,7 @@
             let initialText = '';
             switch (initialDifficulty) {
                 case '1':
-                    initialText = 'Все уровни подряд';
+                    initialText = 'Все уровни';
                     initialColor = '#2ecc71'; // Зеленый
                     break;
                 case '2':
@@ -1454,7 +1454,7 @@
                     initialColor = '#f39c12'; // Желтый
                     break;
                 case '3':
-                    initialText = 'Трудные уровни';
+                    initialText = 'Сложные уровни';
                     initialColor = '#c0392b'; // Темно-красный
                     break;
             }
