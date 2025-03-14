@@ -91,7 +91,37 @@
             <input type="range" id="difficulty" name="difficulty" min="1" max="3" value="1">
             <div id="difficulty-label">Легкий</div>
         </div>
-        <!-- Здесь можно добавить элементы управления для настроек -->
+
+        <!-- Статистика пройденных уровней -->
+        <div id="completed-levels-stats" style="width: 100%; text-align: center; margin: 20px 0; display: none;">
+            <h3>Статистика пройденных уровней</h3>
+            <div class="stats-container">
+                <div class="stat-item">
+                    <div class="stat-label">Легкий уровень:</div>
+                    <div id="easy-completed">0</div>
+                    <div id="easy-total">из 0</div>
+                    <div class="progress-bar">
+                        <div id="easy-progress" class="progress" style="width: 0%;"></div>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Средний уровень:</div>
+                    <div id="medium-completed">0</div>
+                    <div id="medium-total">из 0</div>
+                    <div class="progress-bar">
+                        <div id="medium-progress" class="progress" style="width: 0%;"></div>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Сложный уровень:</div>
+                    <div id="hard-completed">0</div>
+                    <div id="hard-total">из 0</div>
+                    <div class="progress-bar">
+                        <div id="hard-progress" class="progress" style="width: 0%;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <style>
@@ -509,6 +539,51 @@
             font-weight: bold;
             color: #2c3e50;
         }
+
+        /* Стили для статистики пройденных уровней */
+        .stats-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 15px;
+            width: 80%;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-label {
+            font-weight: bold;
+            color: #2c3e50;
+            width: 150px;
+            text-align: left;
+        }
+
+        .progress-bar {
+            height: 10px;
+            background-color: #ecf0f1;
+            border-radius: 5px;
+            overflow: hidden;
+            flex-grow: 1;
+            margin: 0 10px;
+        }
+
+        .progress {
+            height: 100%;
+            background-color: #3498db;
+            border-radius: 5px;
+            transition: width 0.3s ease;
+        }
     </style>
 
     <script>
@@ -522,6 +597,13 @@
 
             // Текущий пользователь
             let currentUser = null;
+
+            // Объект для хранения пройденных уровней пользователя
+            let completedLevels = {
+                easy: [],
+                medium: [],
+                hard: []
+            };
 
             // Функция для входа через Google
             function loginWithGoogle() {
@@ -539,6 +621,37 @@
                     .catch(error => {
                         console.error('Ошибка выхода:', error);
                     });
+            }
+
+            // Функция для обновления статистики пройденных уровней
+            function updateCompletedLevelsStats() {
+                const statsContainer = document.getElementById('completed-levels-stats');
+
+                if (!currentUser) {
+                    // Если пользователь не авторизован, скрываем статистику
+                    statsContainer.style.display = 'none';
+                    return;
+                }
+
+                // Показываем блок статистики
+                statsContainer.style.display = 'block';
+
+                // Обновляем статистику для каждого уровня сложности
+                const levels = [
+                    { key: 'easy', label: 'Легкий', combinations: easyLevelCombinations },
+                    { key: 'medium', label: 'Средний', combinations: mediumLevelCombinations },
+                    { key: 'hard', label: 'Сложный', combinations: hardLevelCombinations }
+                ];
+
+                levels.forEach(level => {
+                    const completed = completedLevels[level.key] ? completedLevels[level.key].length : 0;
+                    const total = level.combinations.length;
+                    const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+                    document.getElementById(`${level.key}-completed`).textContent = completed;
+                    document.getElementById(`${level.key}-total`).textContent = `из ${total}`;
+                    document.getElementById(`${level.key}-progress`).style.width = `${percentage}%`;
+                });
             }
 
             // Обработчик изменения состояния аутентификации
@@ -565,11 +678,21 @@
                     // Пользователь вышел
                     currentUser = null;
 
+                    // Сбрасываем пройденные уровни
+                    completedLevels = {
+                        easy: [],
+                        medium: [],
+                        hard: []
+                    };
+
                     // Обновляем UI
                     loginButton.style.display = 'block';
                     userInfo.style.display = 'none';
                     userName.textContent = 'Гость';
                     userPhoto.src = '';
+
+                    // Обновляем статистику
+                    updateCompletedLevelsStats();
                 }
             });
 
@@ -580,10 +703,37 @@
                         if (doc.exists) {
                             const userData = doc.data();
                             console.log('Данные пользователя:', userData);
-                            // Здесь можно использовать данные пользователя
+
+                            // Загружаем пройденные уровни, если они есть
+                            if (userData.completedLevels) {
+                                completedLevels = userData.completedLevels;
+                                console.log('Загружены пройденные уровни:', completedLevels);
+                            } else {
+                                // Если пройденных уровней нет, инициализируем пустыми массивами
+                                completedLevels = {
+                                    easy: [],
+                                    medium: [],
+                                    hard: []
+                                };
+
+                                // Обновляем документ пользователя, добавляя структуру для пройденных уровней
+                                db.collection('users').doc(userId).update({
+                                    completedLevels: completedLevels
+                                })
+                                .then(() => {
+                                    console.log('Добавлена структура для пройденных уровней');
+                                })
+                                .catch(error => {
+                                    console.error('Ошибка при обновлении профиля пользователя:', error);
+                                });
+                            }
+
+                            // Обновляем статистику пройденных уровней
+                            updateCompletedLevelsStats();
                         } else {
-                            // Создаем новый документ для пользователя
-                            db.collection('users').doc(userId).set({
+                            console.log('Создание нового профиля пользователя...');
+                            // Создаем новый документ для пользователя с пустыми пройденными уровнями
+                            return db.collection('users').doc(userId).set({
                                 displayName: currentUser.displayName,
                                 email: currentUser.email,
                                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -591,21 +741,67 @@
                                     gamesPlayed: 0,
                                     gamesWon: 0,
                                     bestTime: null
+                                },
+                                completedLevels: {
+                                    easy: [],
+                                    medium: [],
+                                    hard: []
                                 }
+                            })
+                            .then(() => {
+                                console.log('Профиль пользователя успешно создан');
+                            })
+                            .catch(error => {
+                                console.error('Ошибка при создании профиля пользователя:', error);
+                                console.log('Игра продолжит работу без сохранения прогресса');
                             });
                         }
                     })
                     .catch(error => {
                         console.error('Ошибка загрузки данных пользователя:', error);
+                        console.log('Игра продолжит работу без сохранения прогресса');
                     });
             }
 
             // Сохранение результатов игры
-            function saveGameResult(won, time, difficulty) {
+            function saveGameResult(won, time, difficulty, numbers) {
                 if (!currentUser) return;
 
                 const userId = currentUser.uid;
                 const userRef = db.collection('users').doc(userId);
+
+                // Если игра выиграна, добавляем комбинацию в список пройденных
+                if (won && numbers) {
+                    // Сортируем числа для создания уникального идентификатора комбинации
+                    const sortedNumbers = [...numbers].sort((a, b) => a - b);
+                    const levelKey = sortedNumbers.join('-');
+
+                    // Определяем, в какой массив пройденных уровней добавить комбинацию
+                    let difficultyKey;
+                    switch (difficulty) {
+                        case 1:
+                            difficultyKey = 'easy';
+                            break;
+                        case 2:
+                            difficultyKey = 'medium';
+                            break;
+                        case 3:
+                            difficultyKey = 'hard';
+                            break;
+                        default:
+                            difficultyKey = 'easy';
+                    }
+
+                    // Проверяем, не пройден ли уже этот уровень
+                    if (!completedLevels[difficultyKey].includes(levelKey)) {
+                        // Добавляем уровень в список пройденных
+                        completedLevels[difficultyKey].push(levelKey);
+                        console.log(`Добавлен пройденный уровень ${difficultyKey}: ${levelKey}`);
+
+                        // Обновляем статистику пройденных уровней
+                        updateCompletedLevelsStats();
+                    }
+                }
 
                 // Обновляем статистику пользователя
                 userRef.get().then(doc => {
@@ -628,16 +824,64 @@
                         }
 
                         // Обновляем документ пользователя
-                        userRef.update({ stats });
+                        return userRef.update({
+                            stats,
+                            completedLevels // Обновляем список пройденных уровней
+                        })
+                        .then(() => {
+                            console.log('Статистика пользователя и пройденные уровни обновлены');
 
-                        // Добавляем запись об игре
-                        db.collection('users').doc(userId).collection('games').add({
-                            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                            won,
-                            time,
-                            difficulty
+                            // Добавляем запись об игре
+                            return db.collection('users').doc(userId).collection('games').add({
+                                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                                won,
+                                time,
+                                difficulty,
+                                numbers: numbers ? numbers : [] // Сохраняем комбинацию чисел
+                            });
+                        })
+                        .then(() => {
+                            console.log('Результат игры сохранен');
+                        })
+                        .catch(error => {
+                            console.error('Ошибка при сохранении результата игры:', error);
+                        });
+                    } else {
+                        console.log('Профиль пользователя не найден, создаем новый...');
+                        // Создаем новый документ для пользователя
+                        return userRef.set({
+                            displayName: currentUser.displayName,
+                            email: currentUser.email,
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                            stats: {
+                                gamesPlayed: 1,
+                                gamesWon: won ? 1 : 0,
+                                bestTime: won ? time : null
+                            },
+                            completedLevels // Добавляем список пройденных уровней
+                        })
+                        .then(() => {
+                            console.log('Профиль пользователя создан и статистика сохранена');
+
+                            // Добавляем запись об игре
+                            return db.collection('users').doc(userId).collection('games').add({
+                                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                                won,
+                                time,
+                                difficulty,
+                                numbers: numbers ? numbers : [] // Сохраняем комбинацию чисел
+                            });
+                        })
+                        .then(() => {
+                            console.log('Результат игры сохранен');
+                        })
+                        .catch(error => {
+                            console.error('Ошибка при создании профиля и сохранении результата:', error);
                         });
                     }
+                })
+                .catch(error => {
+                    console.error('Ошибка при получении данных пользователя:', error);
                 });
             }
 
@@ -715,23 +959,32 @@
             // Функция для загрузки комбинаций из Firestore
             async function loadCombinationsFromFirestore() {
                 try {
+                    console.log('Начинаем загрузку комбинаций из Firestore...');
+
                     // Загрузка комбинаций для легкого уровня
+                    console.log('Загрузка комбинаций легкого уровня...');
                     const easySnapshot = await db.collection('combinations_easy').limit(100).get();
                     easyLevelCombinations = easySnapshot.docs.map(doc => doc.data());
+                    console.log(`Загружено ${easyLevelCombinations.length} комбинаций легкого уровня`);
 
                     // Загрузка комбинаций для среднего уровня
+                    console.log('Загрузка комбинаций среднего уровня...');
                     const mediumSnapshot = await db.collection('combinations_medium').limit(100).get();
                     mediumLevelCombinations = mediumSnapshot.docs.map(doc => doc.data());
+                    console.log(`Загружено ${mediumLevelCombinations.length} комбинаций среднего уровня`);
 
                     // Загрузка комбинаций для трудного уровня
+                    console.log('Загрузка комбинаций трудного уровня...');
                     const hardSnapshot = await db.collection('combinations_hard').limit(100).get();
                     hardLevelCombinations = hardSnapshot.docs.map(doc => doc.data());
+                    console.log(`Загружено ${hardLevelCombinations.length} комбинаций трудного уровня`);
 
                     // Проверяем, что все базы данных загружены успешно
                     if (easyLevelCombinations.length > 0 &&
                         mediumLevelCombinations.length > 0 &&
                         hardLevelCombinations.length > 0) {
 
+                        console.log('Все базы данных успешно загружены из Firestore');
                         databasesLoaded = true;
                         databaseStatus.textContent = 'Базы данных успешно загружены';
                         databaseStatus.style.color = '#2ecc71'; // Зеленый цвет для успеха
@@ -743,15 +996,24 @@
 
                         return true;
                     } else {
+                        console.warn('Одна или несколько баз данных пусты:');
+                        console.warn(`- Легкий уровень: ${easyLevelCombinations.length} комбинаций`);
+                        console.warn(`- Средний уровень: ${mediumLevelCombinations.length} комбинаций`);
+                        console.warn(`- Трудный уровень: ${hardLevelCombinations.length} комбинаций`);
                         throw new Error('Одна или несколько баз данных пусты');
                     }
                 } catch (error) {
-                    console.error('Ошибка при загрузке баз данных:', error);
+                    console.error('Ошибка при загрузке баз данных из Firestore:', error);
 
                     // Используем резервные комбинации
+                    console.log('Переключаемся на использование локальных баз данных...');
                     easyLevelCombinations = fallbackCombinations.easy;
                     mediumLevelCombinations = fallbackCombinations.medium;
                     hardLevelCombinations = fallbackCombinations.hard;
+
+                    console.log(`Загружено ${easyLevelCombinations.length} локальных комбинаций легкого уровня`);
+                    console.log(`Загружено ${mediumLevelCombinations.length} локальных комбинаций среднего уровня`);
+                    console.log(`Загружено ${hardLevelCombinations.length} локальных комбинаций трудного уровня`);
 
                     databasesLoaded = true; // Считаем, что базы данных "загружены" (используем резервные)
                     databaseStatus.textContent = 'Используются локальные базы данных';
@@ -800,19 +1062,24 @@
             // Получение случайной комбинации из базы данных
             function getRandomCombination(difficulty) {
                 let combinations;
+                let difficultyKey;
 
                 switch (difficulty) {
                     case 1:
                         combinations = easyLevelCombinations;
+                        difficultyKey = 'easy';
                         break;
                     case 2:
                         combinations = mediumLevelCombinations;
+                        difficultyKey = 'medium';
                         break;
                     case 3:
                         combinations = hardLevelCombinations;
+                        difficultyKey = 'hard';
                         break;
                     default:
                         combinations = easyLevelCombinations;
+                        difficultyKey = 'easy';
                 }
 
                 // Проверяем, есть ли комбинации
@@ -834,9 +1101,33 @@
                     }
                 }
 
-                // Выбираем случайную комбинацию из базы данных
-                const randomIndex = Math.floor(Math.random() * combinations.length);
-                return combinations[randomIndex].numbers;
+                // Фильтруем комбинации, исключая пройденные уровни
+                let availableCombinations = combinations;
+
+                // Если пользователь авторизован и есть пройденные уровни
+                if (currentUser && completedLevels && completedLevels[difficultyKey] && completedLevels[difficultyKey].length > 0) {
+                    // Создаем массив комбинаций, которые еще не пройдены
+                    availableCombinations = combinations.filter(combo => {
+                        // Сортируем числа для создания уникального идентификатора
+                        const sortedNumbers = [...combo.numbers].sort((a, b) => a - b);
+                        const levelKey = sortedNumbers.join('-');
+
+                        // Возвращаем true, если уровень еще не пройден
+                        return !completedLevels[difficultyKey].includes(levelKey);
+                    });
+
+                    console.log(`Доступно ${availableCombinations.length} непройденных комбинаций из ${combinations.length} для уровня ${difficultyKey}`);
+
+                    // Если все уровни пройдены, используем все комбинации
+                    if (availableCombinations.length === 0) {
+                        console.log(`Все уровни сложности ${difficultyKey} пройдены! Начинаем заново.`);
+                        availableCombinations = combinations;
+                    }
+                }
+
+                // Выбираем случайную комбинацию из отфильтрованных
+                const randomIndex = Math.floor(Math.random() * availableCombinations.length);
+                return availableCombinations[randomIndex].numbers;
             }
 
             // Функция для получения случайного числа из диапазона
@@ -1016,7 +1307,7 @@
                         if (typeof window.saveGameResult === 'function') {
                             const difficultySlider = document.getElementById('difficulty');
                             const difficulty = parseInt(difficultySlider.value);
-                            window.saveGameResult(true, timeTaken, difficulty);
+                            window.saveGameResult(true, timeTaken, difficulty, currentNumbers);
                         }
 
                         // Делаем все кнопки операторов некликабельными после победы, но сохраняем их внешний вид
@@ -1098,6 +1389,9 @@
 
             // Обработчик события для кнопки настроек
             settingsButton.addEventListener('click', () => {
+                // Обновляем статистику пройденных уровней перед отображением настроек
+                updateCompletedLevelsStats();
+
                 gameArea.style.display = 'none';
                 settingsScreen.style.display = 'flex';
                 document.querySelector('.container').appendChild(settingsScreen);
