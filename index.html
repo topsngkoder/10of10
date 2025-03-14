@@ -674,77 +674,100 @@
             const timerElement = document.getElementById('timer');
             let timerInterval;
 
-            // Встроенные базы данных комбинаций для разных уровней сложности
-
-            // Легкий уровень - комбинации с числами от 1 до 9
-            const easyLevelCombinations = [
-                {"numbers": [1, 3, 3, 3], "expression": "1 + 3 + 3 + 3 = 10"},
-                {"numbers": [1, 2, 3, 4], "expression": "1 + 2 + 3 + 4 = 10"},
-                {"numbers": [2, 2, 2, 4], "expression": "2 + 2 + 2 + 4 = 10"},
-                {"numbers": [2, 2, 3, 3], "expression": "2 + 2 + 3 + 3 = 10"},
-                {"numbers": [1, 1, 4, 4], "expression": "1 + 1 + 4 + 4 = 10"},
-                {"numbers": [5, 5, 5, 5], "expression": "5 + 5 - 5 + 5 = 10"},
-                {"numbers": [2, 4, 6, 8], "expression": "2 * 4 + 6 - 8 = 10"},
-                {"numbers": [3, 3, 3, 9], "expression": "3 * 3 + 3 - 9 = 10"},
-                {"numbers": [2, 3, 5, 5], "expression": "2 * 5 + 3 - 5 = 10"},
-                {"numbers": [1, 2, 5, 9], "expression": "9 + 2 - 5 * 1 = 10"},
-                {"numbers": [1, 3, 4, 7], "expression": "7 + 4 - 1 * 3 = 10"},
-                {"numbers": [2, 2, 3, 8], "expression": "8 + 3 - 2 / 2 = 10"},
-                {"numbers": [1, 2, 5, 6], "expression": "6 + 5 - 1 * 2 = 10"},
-                {"numbers": [1, 2, 3, 6], "expression": "6 + 3 + 2 - 1 = 10"},
-                {"numbers": [1, 2, 3, 8], "expression": "8 + 3 - 2 * 1 = 10"}
-            ];
-
-            // Средний уровень - комбинации с числами от 2 до 9, без повторений, с умножением/делением
-            const mediumLevelCombinations = [
-                {"numbers": [2, 3, 5, 7], "expression": "2 * 5 + 3 - 7 = 10"},
-                {"numbers": [2, 3, 6, 8], "expression": "8 + 6 - 2 * 3 = 10"},
-                {"numbers": [2, 4, 5, 9], "expression": "9 - 4 + 5 * 2 = 10"},
-                {"numbers": [2, 4, 6, 8], "expression": "2 * 4 + 6 - 8 = 10"},
-                {"numbers": [2, 4, 7, 9], "expression": "9 - 7 + 4 * 2 = 10"},
-                {"numbers": [2, 5, 6, 8], "expression": "8 - 6 + 2 * 5 = 10"},
-                {"numbers": [2, 5, 7, 9], "expression": "9 - 7 + 2 * 5 = 10"},
-                {"numbers": [2, 6, 7, 8], "expression": "8 - 6 + 2 * 7 = 10"},
-                {"numbers": [3, 4, 5, 7], "expression": "7 * 3 - 5 * 4 = 10"},
-                {"numbers": [3, 4, 6, 9], "expression": "9 - 6 + 3 * 4 = 10"},
-                {"numbers": [3, 5, 6, 8], "expression": "8 - 3 + 5 * 6 = 10"},
-                {"numbers": [3, 5, 7, 8], "expression": "8 - 5 + 3 * 7 = 10"},
-                {"numbers": [3, 6, 7, 9], "expression": "9 - 6 + 7 * 3 = 10"},
-                {"numbers": [4, 5, 6, 9], "expression": "9 - 5 + 6 * 4 = 10"},
-                {"numbers": [4, 6, 7, 9], "expression": "9 - 7 + 4 * 6 = 10"}
-            ];
-
-            // Трудный уровень - комбинации с числами от 2 до 9, без повторений, без знака +
-            const hardLevelCombinations = [
-                {"numbers": [2, 3, 5, 8], "expression": "8 * 2 - 5 - 3 = 10"},
-                {"numbers": [2, 3, 6, 9], "expression": "9 * 2 - 6 - 3 = 10"},
-                {"numbers": [2, 4, 5, 7], "expression": "7 * 2 - 5 - 4 = 10"},
-                {"numbers": [2, 4, 6, 8], "expression": "8 * 2 - 6 - 4 = 10"},
-                {"numbers": [2, 5, 6, 7], "expression": "7 * 2 - 5 - 6 = 10"},
-                {"numbers": [2, 5, 7, 9], "expression": "9 * 2 - 5 - 7 = 10"},
-                {"numbers": [2, 6, 7, 8], "expression": "8 * 2 - 6 - 7 = 10"},
-                {"numbers": [3, 4, 5, 8], "expression": "8 * 3 - 5 - 4 = 10"},
-                {"numbers": [3, 4, 7, 9], "expression": "9 * 3 - 7 - 4 = 10"},
-                {"numbers": [3, 5, 6, 8], "expression": "8 * 3 - 5 - 6 = 10"},
-                {"numbers": [3, 5, 7, 9], "expression": "9 * 3 - 5 - 7 = 10"},
-                {"numbers": [3, 6, 7, 8], "expression": "8 * 3 - 6 - 7 = 10"},
-                {"numbers": [4, 5, 6, 9], "expression": "9 * 4 - 5 - 6 = 10"},
-                {"numbers": [4, 5, 7, 8], "expression": "8 * 4 - 5 - 7 = 10"},
-                {"numbers": [4, 6, 7, 9], "expression": "9 * 4 - 6 - 7 = 10"}
-            ];
+            // Базы данных комбинаций для разных уровней сложности
+            let easyLevelCombinations = [];
+            let mediumLevelCombinations = [];
+            let hardLevelCombinations = [];
 
             // Флаг загрузки баз данных
-            let databasesLoaded = true;
+            let databasesLoaded = false;
 
             // Обновляем статус загрузки баз данных
             const databaseStatus = document.getElementById('database-status');
-            databaseStatus.textContent = 'Базы данных успешно загружены';
-            databaseStatus.style.color = '#2ecc71';
+            databaseStatus.textContent = 'Загрузка баз данных...';
+            databaseStatus.style.color = '#f39c12'; // Желтый цвет для ожидания
 
-            // Скрываем сообщение через 3 секунды
-            setTimeout(() => {
-                databaseStatus.style.opacity = '0';
-            }, 3000);
+            // Резервные комбинации на случай, если не удастся загрузить базы данных
+            const fallbackCombinations = {
+                easy: [
+                    {"numbers": [1, 3, 3, 3], "expression": "1 + 3 + 3 + 3 = 10"},
+                    {"numbers": [1, 2, 3, 4], "expression": "1 + 2 + 3 + 4 = 10"},
+                    {"numbers": [2, 2, 2, 4], "expression": "2 + 2 + 2 + 4 = 10"},
+                    {"numbers": [2, 2, 3, 3], "expression": "2 + 2 + 3 + 3 = 10"},
+                    {"numbers": [1, 1, 4, 4], "expression": "1 + 1 + 4 + 4 = 10"}
+                ],
+                medium: [
+                    {"numbers": [2, 3, 5, 7], "expression": "2 * 5 + 3 - 7 = 10"},
+                    {"numbers": [2, 3, 6, 8], "expression": "8 + 6 - 2 * 3 = 10"},
+                    {"numbers": [2, 4, 5, 9], "expression": "9 - 4 + 5 * 2 = 10"},
+                    {"numbers": [2, 4, 6, 8], "expression": "2 * 4 + 6 - 8 = 10"},
+                    {"numbers": [2, 4, 7, 9], "expression": "9 - 7 + 4 * 2 = 10"}
+                ],
+                hard: [
+                    {"numbers": [2, 3, 5, 8], "expression": "8 * 2 - 5 - 3 = 10"},
+                    {"numbers": [2, 3, 6, 9], "expression": "9 * 2 - 6 - 3 = 10"},
+                    {"numbers": [2, 4, 5, 7], "expression": "7 * 2 - 5 - 4 = 10"},
+                    {"numbers": [2, 4, 6, 8], "expression": "8 * 2 - 6 - 4 = 10"},
+                    {"numbers": [2, 5, 6, 7], "expression": "7 * 2 - 5 - 6 = 10"}
+                ]
+            };
+
+            // Функция для загрузки комбинаций из Firestore
+            async function loadCombinationsFromFirestore() {
+                try {
+                    // Загрузка комбинаций для легкого уровня
+                    const easySnapshot = await db.collection('combinations_easy').limit(100).get();
+                    easyLevelCombinations = easySnapshot.docs.map(doc => doc.data());
+
+                    // Загрузка комбинаций для среднего уровня
+                    const mediumSnapshot = await db.collection('combinations_medium').limit(100).get();
+                    mediumLevelCombinations = mediumSnapshot.docs.map(doc => doc.data());
+
+                    // Загрузка комбинаций для трудного уровня
+                    const hardSnapshot = await db.collection('combinations_hard').limit(100).get();
+                    hardLevelCombinations = hardSnapshot.docs.map(doc => doc.data());
+
+                    // Проверяем, что все базы данных загружены успешно
+                    if (easyLevelCombinations.length > 0 &&
+                        mediumLevelCombinations.length > 0 &&
+                        hardLevelCombinations.length > 0) {
+
+                        databasesLoaded = true;
+                        databaseStatus.textContent = 'Базы данных успешно загружены';
+                        databaseStatus.style.color = '#2ecc71'; // Зеленый цвет для успеха
+
+                        // Скрываем сообщение через 3 секунды
+                        setTimeout(() => {
+                            databaseStatus.style.opacity = '0';
+                        }, 3000);
+
+                        return true;
+                    } else {
+                        throw new Error('Одна или несколько баз данных пусты');
+                    }
+                } catch (error) {
+                    console.error('Ошибка при загрузке баз данных:', error);
+
+                    // Используем резервные комбинации
+                    easyLevelCombinations = fallbackCombinations.easy;
+                    mediumLevelCombinations = fallbackCombinations.medium;
+                    hardLevelCombinations = fallbackCombinations.hard;
+
+                    databasesLoaded = true; // Считаем, что базы данных "загружены" (используем резервные)
+                    databaseStatus.textContent = 'Используются локальные базы данных';
+                    databaseStatus.style.color = '#e67e22'; // Оранжевый цвет для предупреждения
+
+                    // Скрываем сообщение через 5 секунд
+                    setTimeout(() => {
+                        databaseStatus.style.opacity = '0';
+                    }, 5000);
+
+                    return false;
+                }
+            }
+
+            // Загружаем комбинации из Firestore
+            loadCombinationsFromFirestore();
             
             // Функция для проверки решения
             function checkExpression(expression) {
@@ -792,6 +815,25 @@
                         combinations = easyLevelCombinations;
                 }
 
+                // Проверяем, есть ли комбинации
+                if (!combinations || combinations.length === 0) {
+                    console.error('База данных комбинаций пуста для уровня сложности', difficulty);
+                    // Используем резервные комбинации
+                    switch (difficulty) {
+                        case 1:
+                            combinations = fallbackCombinations.easy;
+                            break;
+                        case 2:
+                            combinations = fallbackCombinations.medium;
+                            break;
+                        case 3:
+                            combinations = fallbackCombinations.hard;
+                            break;
+                        default:
+                            combinations = fallbackCombinations.easy;
+                    }
+                }
+
                 // Выбираем случайную комбинацию из базы данных
                 const randomIndex = Math.floor(Math.random() * combinations.length);
                 return combinations[randomIndex].numbers;
@@ -804,6 +846,17 @@
 
             // Инициализация новой игры
             function startNewGame() {
+                // Проверяем, загружены ли базы данных
+                if (!databasesLoaded) {
+                    databaseStatus.textContent = 'Ожидание загрузки баз данных...';
+                    databaseStatus.style.opacity = '1';
+                    databaseStatus.style.color = '#f39c12';
+
+                    // Пробуем снова через секунду
+                    setTimeout(startNewGame, 1000);
+                    return;
+                }
+
                 // Получаем текущий уровень сложности
                 const difficultySlider = document.getElementById('difficulty');
                 const difficulty = parseInt(difficultySlider.value);
