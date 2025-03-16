@@ -40,6 +40,9 @@
                 <img id="user-photo" src="" alt="Фото профиля" class="user-photo">
                 <span id="user-name">Гость</span>
                 <button id="logout-button" class="auth-button">Выйти</button>
+                <button id="duels-button" class="auth-button duels-button">
+                    <i class="fas fa-trophy"></i> Дуэли
+                </button>
             </div>
             <button id="login-button" class="auth-button">
                 <i class="fab fa-google"></i> Войти через Google
@@ -98,28 +101,120 @@
             <div class="stats-container">
                 <div class="stat-item">
                     <div class="stat-label">Все уровни:</div>
-                    <div id="easy-completed">0</div>
-                    <div id="easy-total">из 0</div>
+                    <div class="stat-numbers">
+                        <span id="easy-percent">0%</span>
+                    </div>
                     <div class="progress-bar">
                         <div id="easy-progress" class="progress" style="width: 0%;"></div>
                     </div>
                 </div>
                 <div class="stat-item">
                     <div class="stat-label">Уровни средней сложности:</div>
-                    <div id="medium-completed">0</div>
-                    <div id="medium-total">из 0</div>
+                    <div class="stat-numbers">
+                        <span id="medium-percent">0%</span>
+                    </div>
                     <div class="progress-bar">
                         <div id="medium-progress" class="progress" style="width: 0%;"></div>
                     </div>
                 </div>
                 <div class="stat-item">
                     <div class="stat-label">Сложные уровни:</div>
-                    <div id="hard-completed">0</div>
-                    <div id="hard-total">из 0</div>
+                    <div class="stat-numbers">
+                        <span id="hard-percent">0%</span>
+                    </div>
                     <div class="progress-bar">
                         <div id="hard-progress" class="progress" style="width: 0%;"></div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Экран дуэлей -->
+    <div class="duels-screen" id="duels-screen" style="display: none;">
+        <button id="back-from-duels"><i class="fas fa-arrow-left"></i></button>
+        <h2>Дуэли</h2>
+
+        <div class="duels-container">
+            <div class="duels-menu">
+                <button id="create-duel" class="duel-button">Создать дуэль</button>
+                <button id="join-duel" class="duel-button">Присоединиться к дуэли</button>
+                <button id="my-duels" class="duel-button">Мои дуэли</button>
+            </div>
+
+            <!-- Форма создания дуэли -->
+            <div id="create-duel-form" class="duel-form" style="display: none;">
+                <h3>Создание дуэли</h3>
+                <p>Выберите количество заданий и нажмите "Создать".</p>
+
+                <div class="form-group">
+                    <label for="duel-tasks">Количество заданий:</label>
+                    <select id="duel-tasks">
+                        <option value="3">3 задания</option>
+                        <option value="5" selected>5 заданий</option>
+                        <option value="10">10 заданий</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="duel-difficulty">Сложность:</label>
+                    <select id="duel-difficulty">
+                        <option value="medium">Средняя</option>
+                        <option value="hard">Сложная</option>
+                        <option value="mixed" selected>Смешанная</option>
+                    </select>
+                </div>
+
+                <button id="create-duel-button" class="duel-action-button">Создать дуэль</button>
+            </div>
+
+            <!-- Форма присоединения к дуэли -->
+            <div id="join-duel-form" class="duel-form" style="display: none;">
+                <h3>Присоединение к дуэли</h3>
+                <p>Введите код дуэли, полученный от другого игрока.</p>
+
+                <div class="form-group">
+                    <label for="duel-code">Код дуэли:</label>
+                    <input type="text" id="duel-code" placeholder="Например: ABC123">
+                </div>
+
+                <button id="join-duel-button" class="duel-action-button">Присоединиться</button>
+            </div>
+
+            <!-- Список моих дуэлей -->
+            <div id="my-duels-list" class="duel-form" style="display: none;">
+                <h3>Мои дуэли</h3>
+                <div id="active-duels">
+                    <h4>Активные дуэли</h4>
+                    <div id="active-duels-container" class="duels-list-container">
+                        <p class="no-duels-message">У вас нет активных дуэлей</p>
+                    </div>
+                </div>
+
+                <div id="completed-duels">
+                    <h4>Завершенные дуэли</h4>
+                    <div id="completed-duels-container" class="duels-list-container">
+                        <p class="no-duels-message">У вас нет завершенных дуэлей</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Информация о созданной дуэли -->
+            <div id="duel-created-info" class="duel-form" style="display: none;">
+                <h3>Дуэль создана!</h3>
+                <p>Отправьте этот код другому игроку, чтобы он мог присоединиться к дуэли:</p>
+
+                <div class="duel-code-container">
+                    <span id="generated-duel-code" class="duel-code">ABC123</span>
+                    <button id="copy-duel-code" class="copy-button">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                </div>
+
+                <p>Статус дуэли: <span id="duel-status">Ожидание соперника</span></p>
+
+                <button id="cancel-duel" class="duel-action-button cancel-button">Отменить дуэль</button>
+                <button id="start-duel" class="duel-action-button" disabled>Начать дуэль</button>
             </div>
         </div>
     </div>
@@ -522,6 +617,15 @@
             background-color: #7f8c8d;
         }
 
+        .duels-button {
+            background-color: #e67e22;
+            margin-left: 10px;
+        }
+
+        .duels-button:hover {
+            background-color: #d35400;
+        }
+
         #user-info {
             display: flex;
             align-items: center;
@@ -569,6 +673,15 @@
             text-align: left;
         }
 
+        .stat-numbers {
+            font-weight: bold;
+            font-size: 18px;
+            color: #3498db;
+            margin: 0 10px;
+            min-width: 60px;
+            text-align: center;
+        }
+
         .progress-bar {
             height: 10px;
             background-color: #ecf0f1;
@@ -583,6 +696,236 @@
             background-color: #3498db;
             border-radius: 5px;
             transition: width 0.3s ease;
+        }
+
+        /* Стили для экрана дуэлей */
+        .duels-screen {
+            background-color: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+            position: relative;
+            max-width: 800px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 10;
+        }
+
+        #back-from-duels {
+            position: absolute;
+            top: 10px;
+            left: 20px;
+            font-size: 24px;
+            color: #7f8c8d;
+            cursor: pointer;
+            background: none;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            outline: none;
+        }
+
+        #back-from-duels:hover {
+            color: #34495e;
+        }
+
+        .duels-container {
+            width: 100%;
+            max-width: 600px;
+            margin-top: 20px;
+        }
+
+        .duels-menu {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+        }
+
+        .duel-button {
+            flex: 1;
+            margin: 0 10px;
+            padding: 15px;
+            font-size: 16px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .duel-button:hover {
+            background-color: #2980b9;
+        }
+
+        .duel-form {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .duel-form h3 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+            text-align: center;
+        }
+
+        .duel-form p {
+            margin-bottom: 20px;
+            text-align: center;
+            color: #7f8c8d;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .form-group select, .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        .duel-action-button {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            margin-top: 20px;
+            background-color: #2ecc71;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .duel-action-button:hover {
+            background-color: #27ae60;
+        }
+
+        .duel-action-button:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+
+        .cancel-button {
+            background-color: #e74c3c;
+        }
+
+        .cancel-button:hover {
+            background-color: #c0392b;
+        }
+
+        .duel-code-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        .duel-code {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+            background-color: #ecf0f1;
+            padding: 10px 20px;
+            border-radius: 5px;
+            margin-right: 10px;
+            letter-spacing: 2px;
+        }
+
+        .copy-button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .copy-button:hover {
+            background-color: #2980b9;
+        }
+
+        .duels-list-container {
+            margin-top: 10px;
+            margin-bottom: 20px;
+        }
+
+        .duel-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background-color: white;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .duel-info {
+            flex: 1;
+        }
+
+        .duel-opponent {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .duel-date {
+            font-size: 14px;
+            color: #7f8c8d;
+        }
+
+        .duel-status {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .status-waiting {
+            background-color: #f39c12;
+            color: white;
+        }
+
+        .status-active {
+            background-color: #2ecc71;
+            color: white;
+        }
+
+        .status-completed {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .no-duels-message {
+            text-align: center;
+            color: #7f8c8d;
+            font-style: italic;
+            padding: 20px;
         }
     </style>
 
@@ -638,19 +981,24 @@
 
                 // Обновляем статистику для каждого уровня сложности
                 const levels = [
-                    { key: 'easy', label: 'Все уровни', combinations: easyLevelCombinations },
-                    { key: 'medium', label: 'Уровни средней сложности', combinations: mediumLevelCombinations },
-                    { key: 'hard', label: 'Сложные уровни', combinations: hardLevelCombinations }
+                    { key: 'easy', label: 'Все уровни', totalCount: allLevelsCount },
+                    { key: 'medium', label: 'Уровни средней сложности', totalCount: mediumLevelsCount },
+                    { key: 'hard', label: 'Сложные уровни', totalCount: hardLevelsCount }
                 ];
 
                 levels.forEach(level => {
                     const completed = completedLevels[level.key] ? completedLevels[level.key].length : 0;
-                    const total = level.combinations.length;
-                    const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+                    const total = level.totalCount;
 
-                    document.getElementById(`${level.key}-completed`).textContent = completed;
-                    document.getElementById(`${level.key}-total`).textContent = `из ${total}`;
-                    document.getElementById(`${level.key}-progress`).style.width = `${percentage}%`;
+                    // Вычисляем процент с точностью до двух знаков после запятой
+                    const exactPercentage = total > 0 ? (completed / total) * 100 : 0;
+                    const formattedPercentage = exactPercentage.toFixed(2);
+
+                    // Для прогресс-бара используем округленное значение
+                    const roundedPercentage = Math.round(exactPercentage);
+
+                    document.getElementById(`${level.key}-percent`).textContent = `${formattedPercentage}%`;
+                    document.getElementById(`${level.key}-progress`).style.width = `${roundedPercentage}%`;
                 });
             }
 
@@ -889,6 +1237,409 @@
             loginButton.addEventListener('click', loginWithGoogle);
             logoutButton.addEventListener('click', logout);
 
+            // Переменные для дуэлей
+            let currentDuelId = null;
+            let currentDuelData = null;
+
+            // Обработчик для кнопки дуэлей
+            const duelsButton = document.getElementById('duels-button');
+            const duelsScreen = document.getElementById('duels-screen');
+            const backFromDuelsButton = document.getElementById('back-from-duels');
+
+            duelsButton.addEventListener('click', () => {
+                if (!currentUser) {
+                    alert('Для участия в дуэлях необходимо войти в систему');
+                    return;
+                }
+
+                gameArea.style.display = 'none';
+                duelsScreen.style.display = 'flex';
+                document.querySelector('.container').appendChild(duelsScreen);
+
+                // Сбрасываем все формы
+                resetDuelForms();
+            });
+
+            backFromDuelsButton.addEventListener('click', () => {
+                duelsScreen.style.display = 'none';
+                gameArea.style.display = 'block';
+            });
+
+            // Функция для сброса всех форм дуэлей
+            function resetDuelForms() {
+                document.getElementById('create-duel-form').style.display = 'none';
+                document.getElementById('join-duel-form').style.display = 'none';
+                document.getElementById('my-duels-list').style.display = 'none';
+                document.getElementById('duel-created-info').style.display = 'none';
+            }
+
+            // Обработчики для кнопок меню дуэлей
+            document.getElementById('create-duel').addEventListener('click', () => {
+                resetDuelForms();
+                document.getElementById('create-duel-form').style.display = 'block';
+            });
+
+            document.getElementById('join-duel').addEventListener('click', () => {
+                resetDuelForms();
+                document.getElementById('join-duel-form').style.display = 'block';
+            });
+
+            document.getElementById('my-duels').addEventListener('click', () => {
+                resetDuelForms();
+                document.getElementById('my-duels-list').style.display = 'block';
+                loadMyDuels();
+            });
+
+            // Функция для генерации уникального кода дуэли
+            function generateDuelCode() {
+                const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+                let result = '';
+                for (let i = 0; i < 6; i++) {
+                    result += characters.charAt(Math.floor(Math.random() * characters.length));
+                }
+                return result;
+            }
+
+            // Функция для создания дуэли
+            document.getElementById('create-duel-button').addEventListener('click', async () => {
+                if (!currentUser) {
+                    alert('Для создания дуэли необходимо войти в систему');
+                    return;
+                }
+
+                const tasksCount = parseInt(document.getElementById('duel-tasks').value);
+                const difficulty = document.getElementById('duel-difficulty').value;
+
+                // Генерируем уникальный код дуэли
+                const duelCode = generateDuelCode();
+
+                // Выбираем задания для дуэли
+                const duelTasks = await selectDuelTasks(tasksCount, difficulty);
+
+                // Создаем дуэль в Firestore
+                try {
+                    const duelRef = await db.collection('duels').add({
+                        code: duelCode,
+                        creator: {
+                            uid: currentUser.uid,
+                            displayName: currentUser.displayName || 'Игрок',
+                            photoURL: currentUser.photoURL || null
+                        },
+                        opponent: null,
+                        status: 'waiting', // waiting, active, completed
+                        tasks: duelTasks,
+                        tasksCount: tasksCount,
+                        difficulty: difficulty,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        startedAt: null,
+                        completedAt: null,
+                        creatorProgress: {
+                            completedTasks: 0,
+                            totalTime: 0,
+                            isCompleted: false
+                        },
+                        opponentProgress: {
+                            completedTasks: 0,
+                            totalTime: 0,
+                            isCompleted: false
+                        },
+                        winner: null
+                    });
+
+                    currentDuelId = duelRef.id;
+
+                    // Отображаем информацию о созданной дуэли
+                    resetDuelForms();
+                    document.getElementById('duel-created-info').style.display = 'block';
+                    document.getElementById('generated-duel-code').textContent = duelCode;
+                    document.getElementById('duel-status').textContent = 'Ожидание соперника';
+
+                    // Начинаем слушать изменения в дуэли
+                    listenForDuelChanges(currentDuelId);
+
+                    console.log('Дуэль создана с ID:', currentDuelId);
+                } catch (error) {
+                    console.error('Ошибка при создании дуэли:', error);
+                    alert('Не удалось создать дуэль. Пожалуйста, попробуйте еще раз.');
+                }
+            });
+
+            // Функция для выбора заданий для дуэли
+            async function selectDuelTasks(count, difficulty) {
+                let availableTasks = [];
+
+                // Выбираем задания в зависимости от сложности
+                if (difficulty === 'medium') {
+                    availableTasks = [...mediumLevelCombinations];
+                } else if (difficulty === 'hard') {
+                    availableTasks = [...hardLevelCombinations];
+                } else { // mixed
+                    availableTasks = [...mediumLevelCombinations, ...hardLevelCombinations];
+                }
+
+                // Перемешиваем задания
+                for (let i = availableTasks.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [availableTasks[i], availableTasks[j]] = [availableTasks[j], availableTasks[i]];
+                }
+
+                // Выбираем нужное количество заданий
+                return availableTasks.slice(0, count);
+            }
+
+            // Функция для копирования кода дуэли
+            document.getElementById('copy-duel-code').addEventListener('click', () => {
+                const code = document.getElementById('generated-duel-code').textContent;
+                navigator.clipboard.writeText(code)
+                    .then(() => {
+                        alert('Код дуэли скопирован в буфер обмена');
+                    })
+                    .catch(err => {
+                        console.error('Не удалось скопировать код:', err);
+                    });
+            });
+
+            // Функция для отмены дуэли
+            document.getElementById('cancel-duel').addEventListener('click', async () => {
+                if (!currentDuelId) return;
+
+                try {
+                    await db.collection('duels').doc(currentDuelId).delete();
+                    currentDuelId = null;
+                    resetDuelForms();
+                    alert('Дуэль отменена');
+                } catch (error) {
+                    console.error('Ошибка при отмене дуэли:', error);
+                    alert('Не удалось отменить дуэль');
+                }
+            });
+
+            // Функция для присоединения к дуэли
+            document.getElementById('join-duel-button').addEventListener('click', async () => {
+                if (!currentUser) {
+                    alert('Для присоединения к дуэли необходимо войти в систему');
+                    return;
+                }
+
+                const duelCode = document.getElementById('duel-code').value.trim().toUpperCase();
+
+                if (!duelCode) {
+                    alert('Пожалуйста, введите код дуэли');
+                    return;
+                }
+
+                try {
+                    // Ищем дуэль по коду
+                    const duelsSnapshot = await db.collection('duels')
+                        .where('code', '==', duelCode)
+                        .where('status', '==', 'waiting')
+                        .get();
+
+                    if (duelsSnapshot.empty) {
+                        alert('Дуэль с таким кодом не найдена или уже началась');
+                        return;
+                    }
+
+                    const duelDoc = duelsSnapshot.docs[0];
+                    const duelData = duelDoc.data();
+
+                    // Проверяем, не пытается ли игрок присоединиться к своей же дуэли
+                    if (duelData.creator.uid === currentUser.uid) {
+                        alert('Вы не можете присоединиться к своей собственной дуэли');
+                        return;
+                    }
+
+                    // Обновляем дуэль, добавляя информацию о сопернике
+                    await db.collection('duels').doc(duelDoc.id).update({
+                        opponent: {
+                            uid: currentUser.uid,
+                            displayName: currentUser.displayName || 'Соперник',
+                            photoURL: currentUser.photoURL || null
+                        },
+                        status: 'active',
+                        startedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+
+                    alert('Вы успешно присоединились к дуэли!');
+
+                    // Перенаправляем на экран дуэли
+                    currentDuelId = duelDoc.id;
+                    resetDuelForms();
+
+                    // Здесь будет код для начала дуэли
+                    // В полной реализации здесь нужно перейти к экрану игры в режиме дуэли
+
+                } catch (error) {
+                    console.error('Ошибка при присоединении к дуэли:', error);
+                    alert('Не удалось присоединиться к дуэли');
+                }
+            });
+
+            // Функция для загрузки списка дуэлей пользователя
+            async function loadMyDuels() {
+                if (!currentUser) return;
+
+                try {
+                    // Загружаем активные дуэли (где пользователь является создателем или соперником)
+                    const activeDuelsSnapshot = await db.collection('duels')
+                        .where('status', 'in', ['waiting', 'active'])
+                        .get();
+
+                    const activeDuels = [];
+                    activeDuelsSnapshot.forEach(doc => {
+                        const duelData = doc.data();
+                        if (duelData.creator.uid === currentUser.uid ||
+                            (duelData.opponent && duelData.opponent.uid === currentUser.uid)) {
+                            activeDuels.push({
+                                id: doc.id,
+                                ...duelData
+                            });
+                        }
+                    });
+
+                    // Загружаем завершенные дуэли
+                    const completedDuelsSnapshot = await db.collection('duels')
+                        .where('status', '==', 'completed')
+                        .orderBy('completedAt', 'desc')
+                        .limit(10)
+                        .get();
+
+                    const completedDuels = [];
+                    completedDuelsSnapshot.forEach(doc => {
+                        const duelData = doc.data();
+                        if (duelData.creator.uid === currentUser.uid ||
+                            (duelData.opponent && duelData.opponent.uid === currentUser.uid)) {
+                            completedDuels.push({
+                                id: doc.id,
+                                ...duelData
+                            });
+                        }
+                    });
+
+                    // Отображаем дуэли
+                    displayDuels(activeDuels, completedDuels);
+
+                } catch (error) {
+                    console.error('Ошибка при загрузке дуэлей:', error);
+                    alert('Не удалось загрузить список дуэлей');
+                }
+            }
+
+            // Функция для отображения списка дуэлей
+            function displayDuels(activeDuels, completedDuels) {
+                const activeDuelsContainer = document.getElementById('active-duels-container');
+                const completedDuelsContainer = document.getElementById('completed-duels-container');
+
+                // Очищаем контейнеры
+                activeDuelsContainer.innerHTML = '';
+                completedDuelsContainer.innerHTML = '';
+
+                // Отображаем активные дуэли
+                if (activeDuels.length === 0) {
+                    activeDuelsContainer.innerHTML = '<p class="no-duels-message">У вас нет активных дуэлей</p>';
+                } else {
+                    activeDuels.forEach(duel => {
+                        const duelElement = createDuelElement(duel);
+                        activeDuelsContainer.appendChild(duelElement);
+                    });
+                }
+
+                // Отображаем завершенные дуэли
+                if (completedDuels.length === 0) {
+                    completedDuelsContainer.innerHTML = '<p class="no-duels-message">У вас нет завершенных дуэлей</p>';
+                } else {
+                    completedDuels.forEach(duel => {
+                        const duelElement = createDuelElement(duel);
+                        completedDuelsContainer.appendChild(duelElement);
+                    });
+                }
+            }
+
+            // Функция для создания элемента дуэли
+            function createDuelElement(duel) {
+                const duelElement = document.createElement('div');
+                duelElement.className = 'duel-item';
+
+                // Определяем, кто соперник для текущего пользователя
+                const isCreator = duel.creator.uid === currentUser.uid;
+                const opponent = isCreator ? duel.opponent : duel.creator;
+
+                // Определяем статус дуэли
+                let statusText = '';
+                let statusClass = '';
+
+                if (duel.status === 'waiting') {
+                    statusText = 'Ожидание';
+                    statusClass = 'status-waiting';
+                } else if (duel.status === 'active') {
+                    statusText = 'Активна';
+                    statusClass = 'status-active';
+                } else if (duel.status === 'completed') {
+                    statusText = 'Завершена';
+                    statusClass = 'status-completed';
+                }
+
+                // Создаем содержимое элемента
+                duelElement.innerHTML = `
+                    <div class="duel-info">
+                        <div class="duel-opponent">${opponent ? opponent.displayName : 'Ожидание соперника'}</div>
+                        <div class="duel-date">${duel.createdAt ? new Date(duel.createdAt.seconds * 1000).toLocaleString() : 'Дата неизвестна'}</div>
+                    </div>
+                    <div class="duel-status ${statusClass}">${statusText}</div>
+                `;
+
+                // Добавляем обработчик клика для перехода к дуэли
+                duelElement.addEventListener('click', () => {
+                    // Здесь будет код для перехода к экрану дуэли
+                    alert('Переход к дуэли с ID: ' + duel.id);
+                });
+
+                return duelElement;
+            }
+
+            // Функция для отслеживания изменений в дуэли
+            function listenForDuelChanges(duelId) {
+                return db.collection('duels').doc(duelId)
+                    .onSnapshot(doc => {
+                        if (doc.exists) {
+                            const duelData = doc.data();
+                            currentDuelData = duelData;
+
+                            // Обновляем статус дуэли
+                            const statusElement = document.getElementById('duel-status');
+
+                            if (duelData.status === 'waiting') {
+                                statusElement.textContent = 'Ожидание соперника';
+                                document.getElementById('start-duel').disabled = true;
+                            } else if (duelData.status === 'active') {
+                                statusElement.textContent = `Соперник присоединился: ${duelData.opponent.displayName}`;
+                                document.getElementById('start-duel').disabled = false;
+                            } else if (duelData.status === 'completed') {
+                                statusElement.textContent = 'Дуэль завершена';
+                                document.getElementById('start-duel').disabled = true;
+                            }
+                        } else {
+                            // Дуэль была удалена
+                            resetDuelForms();
+                            alert('Дуэль была отменена');
+                        }
+                    }, error => {
+                        console.error('Ошибка при отслеживании дуэли:', error);
+                    });
+            }
+
+            // Обработчик для кнопки начала дуэли
+            document.getElementById('start-duel').addEventListener('click', () => {
+                if (!currentDuelId || !currentDuelData || currentDuelData.status !== 'active') {
+                    alert('Невозможно начать дуэль');
+                    return;
+                }
+
+                // Здесь будет код для начала дуэли
+                // В полной реализации здесь нужно перейти к экрану игры в режиме дуэли
+                alert('Начинаем дуэль!');
+            });
+
             // Экспортируем функцию сохранения результатов для использования в игре
             window.saveGameResult = saveGameResult;
             // Элементы DOM
@@ -922,6 +1673,11 @@
             let easyLevelCombinations = [];
             let mediumLevelCombinations = [];
             let hardLevelCombinations = [];
+
+            // Общее количество заданий в каждой базе данных
+            let allLevelsCount = 0;
+            let mediumLevelsCount = 0;
+            let hardLevelsCount = 0;
 
             // Флаг загрузки баз данных
             let databasesLoaded = false;
@@ -963,21 +1719,24 @@
 
                     // Загрузка комбинаций для легкого уровня
                     console.log('Загрузка комбинаций легкого уровня...');
-                    const easySnapshot = await db.collection('combinations_easy').limit(100).get();
+                    const easySnapshot = await db.collection('combinations_easy').get();
                     easyLevelCombinations = easySnapshot.docs.map(doc => doc.data());
-                    console.log(`Загружено ${easyLevelCombinations.length} комбинаций легкого уровня`);
+                    allLevelsCount = easyLevelCombinations.length;
+                    console.log(`Загружено ${allLevelsCount} комбинаций легкого уровня`);
 
                     // Загрузка комбинаций для среднего уровня
                     console.log('Загрузка комбинаций среднего уровня...');
-                    const mediumSnapshot = await db.collection('combinations_medium').limit(100).get();
+                    const mediumSnapshot = await db.collection('combinations_medium').get();
                     mediumLevelCombinations = mediumSnapshot.docs.map(doc => doc.data());
-                    console.log(`Загружено ${mediumLevelCombinations.length} комбинаций среднего уровня`);
+                    mediumLevelsCount = mediumLevelCombinations.length;
+                    console.log(`Загружено ${mediumLevelsCount} комбинаций среднего уровня`);
 
                     // Загрузка комбинаций для трудного уровня
                     console.log('Загрузка комбинаций трудного уровня...');
-                    const hardSnapshot = await db.collection('combinations_hard').limit(100).get();
+                    const hardSnapshot = await db.collection('combinations_hard').get();
                     hardLevelCombinations = hardSnapshot.docs.map(doc => doc.data());
-                    console.log(`Загружено ${hardLevelCombinations.length} комбинаций трудного уровня`);
+                    hardLevelsCount = hardLevelCombinations.length;
+                    console.log(`Загружено ${hardLevelsCount} комбинаций трудного уровня`);
 
                     // Проверяем, что все базы данных загружены успешно
                     if (easyLevelCombinations.length > 0 &&
@@ -1011,9 +1770,13 @@
                     mediumLevelCombinations = fallbackCombinations.medium;
                     hardLevelCombinations = fallbackCombinations.hard;
 
-                    console.log(`Загружено ${easyLevelCombinations.length} локальных комбинаций легкого уровня`);
-                    console.log(`Загружено ${mediumLevelCombinations.length} локальных комбинаций среднего уровня`);
-                    console.log(`Загружено ${hardLevelCombinations.length} локальных комбинаций трудного уровня`);
+                    allLevelsCount = easyLevelCombinations.length;
+                    mediumLevelsCount = mediumLevelCombinations.length;
+                    hardLevelsCount = hardLevelCombinations.length;
+
+                    console.log(`Загружено ${allLevelsCount} локальных комбинаций легкого уровня`);
+                    console.log(`Загружено ${mediumLevelsCount} локальных комбинаций среднего уровня`);
+                    console.log(`Загружено ${hardLevelsCount} локальных комбинаций трудного уровня`);
 
                     databasesLoaded = true; // Считаем, что базы данных "загружены" (используем резервные)
                     databaseStatus.textContent = 'Используются локальные базы данных';
