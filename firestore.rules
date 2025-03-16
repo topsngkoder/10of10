@@ -11,21 +11,37 @@ service cloud.firestore {
       }
     }
     
-    // Правила для дуэлей
+    // Правила для коллекции дуэлей
+    match /duels {
+      // Разрешаем аутентифицированным пользователям получать списки дуэлей
+      allow list: if request.auth != null;
+    }
+
+    // Правила для отдельных документов дуэлей
     match /duels/{duelId} {
       // Разрешаем создание дуэлей аутентифицированным пользователям
       allow create: if request.auth != null;
       
-      // Разрешаем чтение дуэли, если пользователь является создателем или соперником
+      // Разрешаем чтение дуэли в следующих случаях:
+      // 1. Если пользователь является создателем или соперником
+      // 2. Если дуэль в статусе "waiting" (для поиска дуэлей по коду)
       allow read: if request.auth != null && (
-        resource.data.creator.uid == request.auth.uid || 
-        (resource.data.opponent != null && resource.data.opponent.uid == request.auth.uid)
+        resource.data.creator.uid == request.auth.uid ||
+        (resource.data.opponent != null && resource.data.opponent.uid == request.auth.uid) ||
+        resource.data.status == "waiting"
       );
       
-      // Разрешаем обновление дуэли, если пользователь является создателем или соперником
+      // Разрешаем обновление дуэли в следующих случаях:
+      // 1. Если пользователь является создателем
+      // 2. Если пользователь является соперником
+      // 3. Если дуэль в статусе "waiting" и пользователь пытается присоединиться к ней
       allow update: if request.auth != null && (
-        resource.data.creator.uid == request.auth.uid || 
-        (resource.data.opponent != null && resource.data.opponent.uid == request.auth.uid)
+        resource.data.creator.uid == request.auth.uid ||
+        (resource.data.opponent != null && resource.data.opponent.uid == request.auth.uid) ||
+        (resource.data.status == "waiting" &&
+         resource.data.creator.uid != request.auth.uid &&
+         request.resource.data.status == "active" &&
+         request.resource.data.opponent.uid == request.auth.uid)
       );
       
       // Разрешаем удаление дуэли только создателю и только если дуэль в статусе "waiting"

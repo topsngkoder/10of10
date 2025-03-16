@@ -1449,15 +1449,31 @@
                         return;
                     }
 
+                    // Создаем объект с данными соперника
+                    const opponentData = {
+                        uid: currentUser.uid,
+                        displayName: currentUser.displayName || 'Соперник',
+                        photoURL: currentUser.photoURL || null
+                    };
+
                     // Обновляем дуэль, добавляя информацию о сопернике
-                    await db.collection('duels').doc(duelDoc.id).update({
-                        opponent: {
-                            uid: currentUser.uid,
-                            displayName: currentUser.displayName || 'Соперник',
-                            photoURL: currentUser.photoURL || null
-                        },
-                        status: 'active',
-                        startedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    // Используем транзакцию для безопасного обновления
+                    await db.runTransaction(async (transaction) => {
+                        // Получаем актуальные данные дуэли
+                        const duelRef = db.collection('duels').doc(duelDoc.id);
+                        const freshDuelDoc = await transaction.get(duelRef);
+
+                        // Проверяем, что дуэль все еще в статусе "waiting"
+                        if (!freshDuelDoc.exists || freshDuelDoc.data().status !== 'waiting') {
+                            throw new Error('Дуэль уже недоступна');
+                        }
+
+                        // Обновляем дуэль
+                        transaction.update(duelRef, {
+                            opponent: opponentData,
+                            status: 'active',
+                            startedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
                     });
 
                     alert('Вы успешно присоединились к дуэли!');
@@ -1466,12 +1482,15 @@
                     currentDuelId = duelDoc.id;
                     resetDuelForms();
 
+                    // Начинаем слушать изменения в дуэли
+                    listenForDuelChanges(currentDuelId);
+
                     // Здесь будет код для начала дуэли
                     // В полной реализации здесь нужно перейти к экрану игры в режиме дуэли
 
                 } catch (error) {
                     console.error('Ошибка при присоединении к дуэли:', error);
-                    alert('Не удалось присоединиться к дуэли');
+                    alert('Не удалось присоединиться к дуэли: ' + error.message);
                 }
             });
 
@@ -1480,48 +1499,55 @@
                 if (!currentUser) return;
 
                 try {
-                    // Загружаем активные дуэли (где пользователь является создателем или соперником)
-                    const activeDuelsSnapshot = await db.collection('duels')
-                        .where('status', 'in', ['waiting', 'active'])
+                    // Загружаем дуэли, созданные пользователем
+                    const createdDuelsSnapshot = await db.collection('duels')
+                        .where('creator.uid', '==', currentUser.uid)
                         .get();
 
-                    const activeDuels = [];
-                    activeDuelsSnapshot.forEach(doc => {
-                        const duelData = doc.data();
-                        if (duelData.creator.uid === currentUser.uid ||
-                            (duelData.opponent && duelData.opponent.uid === currentUser.uid)) {
-                            activeDuels.push({
+                    // Загружаем дуэли, в которых пользователь является соперником
+                    const joinedDuelsSnapshot = await db.collection('duels')
+                        .where('opponent.uid', '==', currentUser.uid)
+                        .get();
+
+                    // Объединяем результаты
+                    const allDuels = [];
+
+                    createdDuelsSnapshot.forEach(doc => {
+                        allDuels.push({
+                            id: doc.id,
+                            ...doc.data()
+                        });
+                    });
+
+                    joinedDuelsSnapshot.forEach(doc => {
+                        // Проверяем, не добавили ли мы уже эту дуэль
+                        if (!allDuels.some(duel => duel.id === doc.id)) {
+                            allDuels.push({
                                 id: doc.id,
-                                ...duelData
+                                ...doc.data()
                             });
                         }
                     });
 
-                    // Загружаем завершенные дуэли
-                    const completedDuelsSnapshot = await db.collection('duels')
-                        .where('status', '==', 'completed')
-                        .orderBy('completedAt', 'desc')
-                        .limit(10)
-                        .get();
+                    // Разделяем на активные и завершенные
+                    const activeDuels = allDuels.filter(duel =>
+                        duel.status === 'waiting' || duel.status === 'active'
+                    );
 
-                    const completedDuels = [];
-                    completedDuelsSnapshot.forEach(doc => {
-                        const duelData = doc.data();
-                        if (duelData.creator.uid === currentUser.uid ||
-                            (duelData.opponent && duelData.opponent.uid === currentUser.uid)) {
-                            completedDuels.push({
-                                id: doc.id,
-                                ...duelData
-                            });
-                        }
-                    });
+                    const completedDuels = allDuels.filter(duel =>
+                        duel.status === 'completed'
+                    ).sort((a, b) => {
+                        // Сортируем по дате завершения (от новых к старым)
+                        if (!a.completedAt || !b.completedAt) return 0;
+                        return b.completedAt.seconds - a.completedAt.seconds;
+                    }).slice(0, 10); // Ограничиваем 10 последними
 
                     // Отображаем дуэли
                     displayDuels(activeDuels, completedDuels);
 
                 } catch (error) {
                     console.error('Ошибка при загрузке дуэлей:', error);
-                    alert('Не удалось загрузить список дуэлей');
+                    alert('Не удалось загрузить список дуэлей: ' + error.message);
                 }
             }
 
