@@ -927,6 +927,46 @@
             font-style: italic;
             padding: 20px;
         }
+
+        /* u0421u0442u0438u043bu0438 u0434u043bu044f u043au043du043eu043fu043au0438 u043eu0442u043cu0435u043du044b u0434u0443u044du043bu0438 */
+        .duel-cancel-button {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 10px;
+            margin-top: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .duel-cancel-button i {
+            margin-right: 5px;
+        }
+
+        .duel-cancel-button:hover {
+            background-color: #c0392b;
+        }
+
+        /* u0421u0442u0438u043bu0438 u0434u043bu044f u044du043bu0435u043cu0435u043du0442u0430 u0434u0443u044du043bu0438 */
+        .duel-item {
+            position: relative;
+            padding: 15px;
+            margin-bottom: 10px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .duel-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
     </style>
 
     <script>
@@ -1263,6 +1303,12 @@
             backFromDuelsButton.addEventListener('click', () => {
                 duelsScreen.style.display = 'none';
                 gameArea.style.display = 'block';
+
+                // Отписываемся от слушателя изменений дуэли при закрытии экрана дуэлей
+                if (duelUnsubscribe) {
+                    duelUnsubscribe();
+                    duelUnsubscribe = null;
+                }
             });
 
             // Функция для сброса всех форм дуэлей
@@ -1271,6 +1317,10 @@
                 document.getElementById('join-duel-form').style.display = 'none';
                 document.getElementById('my-duels-list').style.display = 'none';
                 document.getElementById('duel-created-info').style.display = 'none';
+
+                // Сбрасываем текущую дуэль
+                currentDuelId = null;
+                currentDuelData = null;
             }
 
             // Обработчики для кнопок меню дуэлей
@@ -1284,10 +1334,19 @@
                 document.getElementById('join-duel-form').style.display = 'block';
             });
 
+            // Переменная для отслеживания времени последней загрузки дуэлей
+            let lastDuelsLoadTime = 0;
+
             document.getElementById('my-duels').addEventListener('click', () => {
                 resetDuelForms();
                 document.getElementById('my-duels-list').style.display = 'block';
-                loadMyDuels();
+
+                // Загружаем дуэли только если прошло более 10 секунд с последней загрузки
+                const now = Date.now();
+                if (now - lastDuelsLoadTime > 10000) {
+                    loadMyDuels();
+                    lastDuelsLoadTime = now;
+                }
             });
 
             // Функция для генерации уникального кода дуэли
@@ -1300,10 +1359,47 @@
                 return result;
             }
 
+            // Функция для проверки наличия активных дуэлей пользователя
+            async function hasActiveUserDuels() {
+                if (!currentUser) return false;
+
+                try {
+                    // Проверяем дуэли, где пользователь является создателем
+                    const creatorDuelsSnapshot = await db.collection('duels')
+                        .where('creator.uid', '==', currentUser.uid)
+                        .where('status', 'in', ['waiting', 'active'])
+                        .limit(1)
+                        .get();
+
+                    if (!creatorDuelsSnapshot.empty) {
+                        return true;
+                    }
+
+                    // Проверяем дуэли, где пользователь является соперником
+                    const opponentDuelsSnapshot = await db.collection('duels')
+                        .where('opponent.uid', '==', currentUser.uid)
+                        .where('status', '==', 'active')
+                        .limit(1)
+                        .get();
+
+                    return !opponentDuelsSnapshot.empty;
+                } catch (error) {
+                    console.error('Ошибка при проверке активных дуэлей:', error);
+                    return false; // В случае ошибки позволяем создать дуэль
+                }
+            }
+
             // Функция для создания дуэли
             document.getElementById('create-duel-button').addEventListener('click', async () => {
                 if (!currentUser) {
                     alert('Для создания дуэли необходимо войти в систему');
+                    return;
+                }
+
+                // Проверяем, есть ли уже активные дуэли
+                const hasActiveDuels = await hasActiveUserDuels();
+                if (hasActiveDuels) {
+                    alert('У вас уже есть активная дуэль. Завершите или отмените ее, прежде чем создавать новую.');
                     return;
                 }
 
@@ -1457,23 +1553,14 @@
                     };
 
                     // Обновляем дуэль, добавляя информацию о сопернике
-                    // Используем транзакцию для безопасного обновления
-                    await db.runTransaction(async (transaction) => {
-                        // Получаем актуальные данные дуэли
-                        const duelRef = db.collection('duels').doc(duelDoc.id);
-                        const freshDuelDoc = await transaction.get(duelRef);
+                    // Используем обычное обновление вместо транзакции, чтобы уменьшить количество запросов
+                    const duelRef = db.collection('duels').doc(duelDoc.id);
 
-                        // Проверяем, что дуэль все еще в статусе "waiting"
-                        if (!freshDuelDoc.exists || freshDuelDoc.data().status !== 'waiting') {
-                            throw new Error('Дуэль уже недоступна');
-                        }
-
-                        // Обновляем дуэль
-                        transaction.update(duelRef, {
-                            opponent: opponentData,
-                            status: 'active',
-                            startedAt: firebase.firestore.FieldValue.serverTimestamp()
-                        });
+                    // Обновляем дуэль
+                    await duelRef.update({
+                        opponent: opponentData,
+                        status: 'active',
+                        startedAt: firebase.firestore.FieldValue.serverTimestamp()
                     });
 
                     alert('Вы успешно присоединились к дуэли!');
@@ -1614,6 +1701,44 @@
                     <div class="duel-status ${statusClass}">${statusText}</div>
                 `;
 
+                // Добавляем кнопку отмены для активных дуэлей, где пользователь является создателем
+                if ((duel.status === 'waiting' || duel.status === 'active') && isCreator) {
+                    const cancelButton = document.createElement('button');
+                    cancelButton.className = 'duel-cancel-button';
+                    cancelButton.innerHTML = '<i class="fas fa-times"></i> Отменить';
+                    duelElement.appendChild(cancelButton);
+
+                    // Добавляем обработчик клика для кнопки отмены
+                    cancelButton.addEventListener('click', async (e) => {
+                        e.stopPropagation(); // Предотвращаем всплытие события на родительский элемент
+
+                        if (confirm('Вы уверены, что хотите отменить эту дуэль?')) {
+                            try {
+                                // Если дуэль в статусе "waiting", удаляем ее
+                                if (duel.status === 'waiting') {
+                                    await db.collection('duels').doc(duel.id).delete();
+                                    alert('Дуэль успешно отменена');
+                                } else {
+                                    // Если дуэль уже активна, помечаем ее как завершенную
+                                    await db.collection('duels').doc(duel.id).update({
+                                        status: 'completed',
+                                        completedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                                        winner: duel.opponent ? duel.opponent.uid : null, // Победителем становится соперник, если он есть
+                                        winReason: 'cancelled_by_creator'
+                                    });
+                                    alert('Дуэль завершена. Победа присуждена сопернику.');
+                                }
+
+                                // Перезагружаем список дуэлей
+                                loadMyDuels();
+                            } catch (error) {
+                                console.error('Ошибка при отмене дуэли:', error);
+                                alert('Не удалось отменить дуэль: ' + error.message);
+                            }
+                        }
+                    });
+                }
+
                 // Добавляем обработчик клика для перехода к дуэли
                 duelElement.addEventListener('click', () => {
                     // Здесь будет код для перехода к экрану дуэли
@@ -1623,35 +1748,71 @@
                 return duelElement;
             }
 
+            // Переменная для хранения отписки от слушателя изменений дуэли
+            let duelUnsubscribe = null;
+
             // Функция для отслеживания изменений в дуэли
             function listenForDuelChanges(duelId) {
-                return db.collection('duels').doc(duelId)
-                    .onSnapshot(doc => {
-                        if (doc.exists) {
-                            const duelData = doc.data();
-                            currentDuelData = duelData;
+                // Если уже есть активный слушатель, отписываемся от него
+                if (duelUnsubscribe) {
+                    duelUnsubscribe();
+                    duelUnsubscribe = null;
+                }
 
-                            // Обновляем статус дуэли
-                            const statusElement = document.getElementById('duel-status');
+                // Создаем новый слушатель с ограничением частоты обновлений
+                duelUnsubscribe = db.collection('duels').doc(duelId)
+                    .onSnapshot({
+                        // Ограничиваем частоту обновлений до одного раза в секунду
+                        includeMetadataChanges: false,
+                        next: doc => {
+                            if (doc.exists) {
+                                const duelData = doc.data();
+                                currentDuelData = duelData;
 
-                            if (duelData.status === 'waiting') {
-                                statusElement.textContent = 'Ожидание соперника';
-                                document.getElementById('start-duel').disabled = true;
-                            } else if (duelData.status === 'active') {
-                                statusElement.textContent = `Соперник присоединился: ${duelData.opponent.displayName}`;
-                                document.getElementById('start-duel').disabled = false;
-                            } else if (duelData.status === 'completed') {
-                                statusElement.textContent = 'Дуэль завершена';
-                                document.getElementById('start-duel').disabled = true;
+                                // Проверяем, отображается ли сейчас экран дуэлей
+                                const duelCreatedInfo = document.getElementById('duel-created-info');
+                                if (duelCreatedInfo.style.display === 'none') {
+                                    // Если экран дуэлей не отображается, не обновляем UI
+                                    return;
+                                }
+
+                                // Обновляем статус дуэли
+                                const statusElement = document.getElementById('duel-status');
+
+                                if (duelData.status === 'waiting') {
+                                    statusElement.textContent = 'Ожидание соперника';
+                                    document.getElementById('start-duel').disabled = true;
+                                } else if (duelData.status === 'active') {
+                                    statusElement.textContent = `Соперник присоединился: ${duelData.opponent.displayName}`;
+                                    document.getElementById('start-duel').disabled = false;
+                                } else if (duelData.status === 'completed') {
+                                    statusElement.textContent = 'Дуэль завершена';
+                                    document.getElementById('start-duel').disabled = true;
+                                }
+                            } else {
+                                // Дуэль была удалена
+                                resetDuelForms();
+                                alert('Дуэль была отменена');
+
+                                // Отписываемся от слушателя
+                                if (duelUnsubscribe) {
+                                    duelUnsubscribe();
+                                    duelUnsubscribe = null;
+                                }
                             }
-                        } else {
-                            // Дуэль была удалена
-                            resetDuelForms();
-                            alert('Дуэль была отменена');
+                        },
+                        error: error => {
+                            console.error('Ошибка при отслеживании дуэли:', error);
+
+                            // Отписываемся от слушателя при ошибке
+                            if (duelUnsubscribe) {
+                                duelUnsubscribe();
+                                duelUnsubscribe = null;
+                            }
                         }
-                    }, error => {
-                        console.error('Ошибка при отслеживании дуэли:', error);
                     });
+
+                return duelUnsubscribe;
             }
 
             // Обработчик для кнопки начала дуэли
